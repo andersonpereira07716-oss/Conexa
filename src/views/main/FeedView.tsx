@@ -1,100 +1,109 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Image } from 'react-native';
-import { supabase } from '../../services/supabaseClient';
-import { Theme } from '../../styles/theme';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../../supabaseClient';
 
-const SafeFlatList = FlatList as unknown as React.ComponentType<any>;
-
-interface FeedViewProps {
-  currentCommunity?: string;
+interface Post {
+  id: string;
+  content: string;
+  created_at: string;
+  author_email?: string;
 }
 
-export default function FeedView({ currentCommunity }: FeedViewProps) {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [newContent, setNewContent] = useState('');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+export function FeedView() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+
+  // Buscar posts do Supabase ao carregar o feed
+  const fetchPosts = async () => {
+    setFetching(true);
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao buscar posts:', error.message);
+    } else {
+      setPosts(data || []);
+    }
+    setFetching(false);
+  };
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id);
-    });
     fetchPosts();
-  }, [currentCommunity]);
+  }, []);
 
-  async function fetchPosts() {
-    let query = supabase.from('posts').select('*, profiles(username, avatar_url)').order('created_at', { ascending: false });
-    
-    if (currentCommunity) {
-      query = query.eq('community', currentCommunity);
-    }
+  // Criar um novo post no Supabase
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPostContent.trim()) return;
 
-    const { data, error } = await query;
-    if (!error && data) {
-      setPosts(data);
-    }
-  }
+    setLoading(true);
+    const user = (await supabase.auth.getUser()).data.user;
 
-  async function createPost() {
-    if (!newContent.trim()) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { error } = await supabase.from('posts').insert([
+      {
+        content: newPostContent,
+        author_email: user?.email || 'Anônimo',
+      },
+    ]);
 
-    const { error } = await supabase.from('posts').insert({
-      user_id: user.id,
-      content: newContent,
-      community: currentCommunity || 'geral',
-    });
-
-    if (!error) {
-      setNewContent('');
+    if (error) {
+      alert('Erro ao publicar: ' + error.message);
+    } else {
+      setNewPostContent('');
       fetchPosts();
     }
-  }
+    setLoading(false);
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder={currentCommunity ? `Postar em #${currentCommunity}...` : "No que você está pensando?"}
-          placeholderTextColor={Theme.colors.textSecondary}
-          value={newContent}
-          onChangeText={setNewContent}
-          multiline
-        />
-        <TouchableOpacity style={styles.button} onPress={createPost}>
-          <Text style={styles.buttonText}>Publicar</Text>
-        </TouchableOpacity>
-      </View>
+    <div className="max-w-xl mx-auto py-6 px-4 text-white">
+      <h1 className="text-2xl font-bold mb-6 text-center">Feed Conexa</h1>
 
-      <SafeFlatList
-        data={posts}
-        keyExtractor={(item: any) => item.id}
-        renderItem={({ item }: { item: any }) => (
-          <View style={styles.postCard}>
-            <View style={styles.postHeader}>
-              <Text style={styles.author}>@{item.profiles?.username || 'usuário'}</Text>
-              <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
-            </View>
-            <Text style={styles.content}>{item.content}</Text>
-          </View>
+      {/* Caixa de criação de post */}
+      <form onSubmit={handleCreatePost} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-6 shadow-lg">
+        <textarea
+          value={newPostContent}
+          onChange={(e) => setNewPostContent(e.target.value)}
+          placeholder="O que está acontecendo?"
+          rows={3}
+          className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none mb-3"
+        />
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={loading || !newPostContent.trim()}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Publicando...' : 'Publicar'}
+          </button>
+        </div>
+      </form>
+
+      {/* Lista de posts */}
+      <div className="space-y-4">
+        {fetching ? (
+          <p className="text-center text-slate-400 text-sm">Carregando feed...</p>
+        ​) : posts.length === 0 ? (
+          <p className="text-center text-slate-400 text-sm">Nenhuma publicação encontrada. Seja o primeiro a postar!</p>
+        ) : (
+          posts.map((post) => (
+            <div key={post.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-md">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-indigo-400">
+                  {post.author_email || 'Usuário'}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {new Date(post.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-sm text-slate-200 whitespace-pre-wrap">{post.content}</p>
+            </div>
+          ))
         )}
-        ListEmptyComponent={<Text style={styles.empty}>Nenhuma publicação nesta comunidade ainda.</Text>}
-      />
-    </View>
+      </div>
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Theme.colors.background, padding: 16 },
-  inputContainer: { backgroundColor: Theme.colors.surface, padding: 12, borderRadius: Theme.radius.md, marginBottom: 16, borderWidth: 1, borderColor: Theme.colors.border },
-  input: { color: Theme.colors.textPrimary, minHeight: 60, textAlignVertical: 'top', marginBottom: 12 },
-  button: { backgroundColor: Theme.colors.primary, padding: 10, borderRadius: Theme.radius.sm, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: 'bold' },
-  postCard: { backgroundColor: Theme.colors.surface, padding: 16, borderRadius: Theme.radius.md, marginBottom: 12, borderWidth: 1, borderColor: Theme.colors.border },
-  postHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  author: { fontWeight: 'bold', color: Theme.colors.accent },
-  date: { fontSize: 12, color: Theme.colors.textSecondary },
-  content: { color: Theme.colors.textPrimary, fontSize: 14 },
-  empty: { textAlign: 'center', color: Theme.colors.textSecondary, marginTop: 24 }
-});

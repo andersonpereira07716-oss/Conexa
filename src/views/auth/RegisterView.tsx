@@ -1,75 +1,97 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../supabaseClient';
 
-export const RegisterView: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
-  const { signUp } = useAuth();
-  const [fullName, setFullName] = useState('');
+export function RegisterView({ onRegisterSuccess, onSwitchToLogin }: { onRegisterSuccess: () => void; onSwitchToLogin: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setInfo('');
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
 
-    if (password.length < 6) {
-      setError('A senha precisa ter pelo menos 6 caracteres.');
-      return;
-    }
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-    setSubmitting(true);
-    try {
-      const data = await signUp(email.trim(), password, fullName.trim());
-      if (!data?.session) {
-        setInfo('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
-      }
-    } catch (err: any) {
-      setError(err?.message === 'User already registered' ? 'Esse e-mail já está cadastrado.' : (err?.message || 'Erro ao cadastrar.'));
-    } finally {
-      setSubmitting(false);
+    if (error) {
+      setErrorMsg(error.message);
+      setLoading(false);
+    } else {
+      setLoading(false);
+      setSuccessMsg('Conta criada com sucesso! Verifique seu e-mail ou faça login.');
+      setTimeout(() => {
+        onRegisterSuccess();
+      }, 2000);
     }
   };
 
   return (
-    <div style={{ padding: '24px', backgroundColor: '#0B0F17', minHeight: '100vh', color: '#F8FAFC', display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box' }}>
-      <h2 style={{ fontSize: '1.8rem', marginBottom: '8px', color: '#6366F1' }}>Criar Conta</h2>
-      <p style={{ color: '#94A3B8', marginBottom: '24px' }}>Preencha os dados abaixo para começar na CONEXA</p>
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-slate-900 p-8 shadow-xl border border-slate-800">
+        <h2 className="text-2xl font-bold text-center text-white mb-2">Criar Conta</h2>
+        <p className="text-sm text-center text-slate-400 mb-6">Junte-se ao Conexa</p>
 
-      {error && (
-        <p style={{ color: '#FF5555', backgroundColor: '#2A1215', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px', fontSize: '0.85rem' }}>
-          {error}
-        </p>
-      )}
-      {info && (
-        <p style={{ color: '#4ADE80', backgroundColor: '#132A1D', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px', fontSize: '0.85rem' }}>
-          {info}
-        </p>
-      )}
+        {errorMsg && (
+          <div className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
+            {errorMsg}
+          </div>
+        )}
 
-      <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <input type="text" placeholder="Nome completo" value={fullName} onChange={(e) => setFullName(e.target.value)} required style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }} />
-        <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }} />
-        <input type="password" placeholder="Senha (mín. 6 caracteres)" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }} />
+        {successMsg && (
+          <div className="mb-4 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-400 border border-emerald-500/20">
+            {successMsg}
+          </div>
+        )}
 
-        <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: submitting ? '#334155' : '#6366F1', color: '#FFF', fontWeight: 'bold', marginTop: '12px', cursor: submitting ? 'default' : 'pointer' }}>
-          {submitting ? 'Cadastrando...' : 'Cadastrar'}
-        </button>
-      </form>
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">E-mail</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              required
+              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+            />
+          </div>
 
-      <p style={{ color: '#94A3B8', textAlign: 'center', marginTop: '24px' }}>
-        Já possui uma conta?{' '}
-        <span style={{ color: '#06B6D4', cursor: 'pointer', textDecoration: 'underline' }} onClick={() => onNavigate('login')}>
-          Entrar
-        </span>
-      </p>
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1">Senha</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
+              required
+              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+            />
+          </div>
 
-      <p style={{ color: '#64748B', textAlign: 'center', marginTop: '12px', cursor: 'pointer', fontSize: '0.9rem' }} onClick={() => onNavigate('landing')}>
-        Voltar ao início
-      </p>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Cadastrando...' : 'Cadastrar'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <button
+            onClick={onSwitchToLogin}
+            className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
+            Já tem uma conta? Entre aqui
+          </button>
+        </div>
+      </div>
     </div>
   );
-};
-export default RegisterView;
+}
