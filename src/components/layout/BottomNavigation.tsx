@@ -8,12 +8,13 @@ interface BottomNavigationProps {
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange }) => {
   const tabs = [
     { id: 'home', label: 'Feed', icon: '🏠' },
+    { id: 'search', label: 'Buscar', icon: '🔍' },
     { id: 'profile', label: 'Perfil', icon: '👤' },
   ];
 
   return (
     <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(22,31,48,0.92)', backdropFilter: 'blur(10px)', borderTop: '1px solid #232C3D', display: 'flex', justifyContent: 'center', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', zIndex: 100 }}>
-      <div style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '400px', justifyContent: 'space-around' }}>
+      <div style={{ display: 'flex', gap: '4px', width: '100%', maxWidth: '400px', justifyContent: 'space-around' }}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -30,7 +31,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, o
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '2px',
-                padding: '8px 22px',
+                padding: '8px 18px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}

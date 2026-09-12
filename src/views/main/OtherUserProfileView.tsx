@@ -76,6 +76,8 @@ export const OtherUserProfileView: React.FC<Props> = ({ userId, onBack }) => {
   const handle = '@' + (profile?.username || 'usuario');
   const initial = displayName.trim().charAt(0).toUpperCase() || 'U';
   const isOwnProfile = user?.id === userId;
+  const bio = profile?.bio || '';
+  const avatarUrl = profile?.avatar_url;
 
   if (loading) {
     return <div style={{ padding: '20px', color: '#64748B', textAlign: 'center' }}>Carregando perfil...</div>;
@@ -86,9 +88,14 @@ export const OtherUserProfileView: React.FC<Props> = ({ userId, onBack }) => {
       <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '0.85rem', cursor: 'pointer', padding: 0, marginBottom: '16px' }}>← Voltar</button>
 
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: avatarColor(handle), margin: '0 auto 12px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#0B0F17' }}>{initial}</div>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="avatar" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto 12px auto', display: 'block' }} />
+        ) : (
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: avatarColor(handle), margin: '0 auto 12px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#0B0F17' }}>{initial}</div>
+        )}
         <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem' }}>{displayName}</h3>
         <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.85rem' }}>{handle}</p>
+        {bio && <p style={{ margin: '10px auto 0 auto', color: '#CBD5E1', fontSize: '0.85rem', maxWidth: '320px' }}>{bio}</p>}
 
         {!isOwnProfile && (
           <button
