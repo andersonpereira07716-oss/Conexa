@@ -1,19 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Share } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Share, ScrollView } from 'react-native';
 import { supabase } from '../../services/supabaseClient';
+import { Theme } from '../../styles/theme';
 
 interface Post {
   id: string;
   content: string;
   created_at: string;
   user_id: string;
+  community_id?: string;
   profiles?: { username: string };
+  communities?: { name: string; slug: string };
   likes_count?: number;
   user_liked?: boolean;
 }
 
+interface Community {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export default function FeedView() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [selectedCommunity, setSelectedCommunity] = useState<string | null>(null);
   const [newPostContent, setNewPostContent] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -22,25 +33,38 @@ export default function FeedView() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setCurrentUserId(user.id);
     });
+    fetchCommunities();
     fetchPosts();
-  }, []);
+  }, [selectedCommunity]);
+
+  async function fetchCommunities() {
+    const { data } = await supabase.from('communities').select('*');
+    if (data) setCommunities(data);
+  }
 
   async function fetchPosts() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('posts')
         .select(`
           id,
           content,
           created_at,
           user_id,
+          community_id,
           profiles ( username ),
+          communities ( name, slug ),
           post_likes ( user_id )
         `)
         .order('created_at', { ascending: false });
 
+      if (selectedCommunity) {
+        query = query.eq('community_id', selectedCommunity);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       const formatted = (data || []).map((item: any) => ({
@@ -76,9 +100,12 @@ export default function FeedView() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const defaultCommunity = communities[0]?.id;
+
       const { error } = await supabase.from('posts').insert({
         content: newPostContent,
-        user_id: user.id
+        user_id: user.id,
+        community_id: selectedCommunity || defaultCommunity
       });
 
       if (error) throw error;
@@ -107,13 +134,32 @@ export default function FeedView() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Feed da Comunidade</Text>
+      <Text style={styles.title}>Conexa Feed</Text>
+
+      {/* Seletor de Nichos / Comunidades */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
+        <TouchableOpacity 
+          style={[styles.filterChip, !selectedCommunity && styles.filterChipActive]}
+          onPress={() => setSelectedCommunity(null)}
+        >
+          <Text style={[styles.filterText, !selectedCommunity && styles.filterTextActive]}>🌐 Todos</Text>
+        </TouchableOpacity>
+        {communities.map(c => (
+          <TouchableOpacity 
+            key={c.id} 
+            style={[styles.filterChip, selectedCommunity === c.id && styles.filterChipActive]}
+            onPress={() => setSelectedCommunity(c.id)}
+          >
+            <Text style={[styles.filterText, selectedCommunity === c.id && styles.filterTextActive]}>{c.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="O que você está pensando?"
-          placeholderTextColor="#64748b"
+          placeholder="Compartilhe algo com sua comunidade..."
+          placeholderTextColor={Theme.colors.textSecondary}
           value={newPostContent}
           onChangeText={setNewPostContent}
           multiline
@@ -129,7 +175,12 @@ export default function FeedView() {
         renderItem={({ item }) => (
           <View style={styles.postCard}>
             <View style={styles.postHeader}>
-              <Text style={styles.postAuthor}>@{item.profiles?.username || 'Anônimo'}</Text>
+              <View>
+                <Text style={styles.postAuthor}>@{item.profiles?.username || 'Anônimo'}</Text>
+                {item.communities?.name && (
+                  <Text style={styles.communityTag}>#{item.communities.name}</Text>
+                )}
+              </View>
               {currentUserId === item.user_id && (
                 <TouchableOpacity onPress={() => deletePost(item.id)}>
                   <Text style={styles.deleteText}>Apagar</Text>
@@ -141,7 +192,7 @@ export default function FeedView() {
             <View style={styles.postActions}>
               <TouchableOpacity onPress={() => togglePostLike(item.id, !!item.user_liked)}>
                 <Text style={[styles.likeText, item.user_liked && styles.liked]}>
-                  ❤️ {item.likes_count || 0} Curtidas
+                  💜 {item.likes_count || 0} Curtidas
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => Share.share({ message: `Veja este post no Conexa: "${item.content}"` })}>
@@ -150,25 +201,33 @@ export default function FeedView() {
             </View>
           </View>
         )}
+        ListEmptyComponent={<Text style={styles.empty}>Nenhuma publicação nesta comunidade ainda.</Text>}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a', padding: 16 },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#fff', marginBottom: 16, textAlign: 'center' },
-  inputContainer: { backgroundColor: '#1e293b', padding: 12, borderRadius: 12, marginBottom: 16, borderWidth: 1, borderColor: '#334155' },
-  input: { color: '#fff', minHeight: 60, textAlignVertical: 'top', marginBottom: 10, fontSize: 16 },
-  button: { backgroundColor: '#3b82f6', padding: 10, borderRadius: 8, alignItems: 'center' },
+  container: { flex: 1, backgroundColor: Theme.colors.background, padding: 16 },
+  title: { fontSize: 24, fontWeight: 'bold', color: Theme.colors.textPrimary, marginBottom: 12, textAlign: 'center', letterSpacing: 0.5 },
+  filterContainer: { maxHeight: 45, marginBottom: 14 },
+  filterChip: { backgroundColor: Theme.colors.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Theme.radius.full, marginRight: 8, borderWidth: 1, borderColor: Theme.colors.border, height: 36, justifyContent: 'center' },
+  filterChipActive: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
+  filterText: { color: Theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  filterTextActive: { color: '#fff' },
+  inputContainer: { backgroundColor: Theme.colors.surface, padding: 14, borderRadius: Theme.radius.md, marginBottom: 16, borderWidth: 1, borderColor: Theme.colors.border },
+  input: { color: Theme.colors.textPrimary, minHeight: 60, textAlignVertical: 'top', marginBottom: 10, fontSize: 15 },
+  button: { backgroundColor: Theme.colors.primary, padding: 12, borderRadius: Theme.radius.sm, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  postCard: { backgroundColor: '#1e293b', padding: 14, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#334155' },
-  postHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  postAuthor: { color: '#38bdf8', fontWeight: 'bold', fontSize: 14 },
-  deleteText: { color: '#ef4444', fontSize: 12 },
-  postContent: { color: '#e2e8f0', fontSize: 15, marginBottom: 10 },
-  postActions: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#334155', paddingTop: 8 },
-  likeText: { color: '#94a3b8', fontSize: 13 },
-  liked: { color: '#ef4444', fontWeight: 'bold' },
-  shareText: { color: '#94a3b8', fontSize: 13 }
+  postCard: { backgroundColor: Theme.colors.surface, padding: 16, borderRadius: Theme.radius.md, marginBottom: 12, borderWidth: 1, borderColor: Theme.colors.border },
+  postHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  postAuthor: { color: Theme.colors.accent, fontWeight: 'bold', fontSize: 14 },
+  communityTag: { color: Theme.colors.textSecondary, fontSize: 11, marginTop: 2 },
+  deleteText: { color: Theme.colors.danger, fontSize: 12 },
+  postContent: { color: Theme.colors.textPrimary, fontSize: 15, marginBottom: 12, lineHeight: 22 },
+  postActions: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Theme.colors.border, paddingTop: 10 },
+  likeText: { color: Theme.colors.textSecondary, fontSize: 13 },
+  liked: { color: Theme.colors.accent, fontWeight: 'bold' },
+  shareText: { color: Theme.colors.textSecondary, fontSize: 13 },
+  empty: { color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 40 }
 });
