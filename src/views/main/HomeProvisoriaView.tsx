@@ -10,6 +10,7 @@ export const HomeProvisoriaView: React.FC = () => {
   const [newPost, setNewPost] = useState('');
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
 
   const fetchPosts = async () => {
     try {
@@ -24,7 +25,18 @@ export const HomeProvisoriaView: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchPosts(); }, []);
+  const fetchFollowing = async () => {
+    if (!user) return;
+    const { data, error } = await supabase.from('follows').select('followed_id').eq('follower_id', user.id);
+    if (!error && data) {
+      setFollowingIds(new Set(data.map((f: any) => f.followed_id)));
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+    fetchFollowing();
+  }, [user]);
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +61,39 @@ export const HomeProvisoriaView: React.FC = () => {
     if (error) {
       console.error('Erro ao curtir post:', error);
       setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, likes_count: currentLikes } : p)));
+    }
+  };
+
+  const handleFollow = async (targetUserId: string) => {
+    if (!user || targetUserId === user.id) return;
+
+    // Atualização otimista
+    setFollowingIds((prev) => new Set(prev).add(targetUserId));
+
+    const { error } = await supabase.from('follows').insert([{ follower_id: user.id, followed_id: targetUserId }]);
+    if (error) {
+      console.error('Erro ao seguir:', error);
+      setFollowingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(targetUserId);
+        return next;
+      });
+    }
+  };
+
+  const handleUnfollow = async (targetUserId: string) => {
+    if (!user) return;
+
+    setFollowingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(targetUserId);
+      return next;
+    });
+
+    const { error } = await supabase.from('follows').delete().eq('follower_id', user.id).eq('followed_id', targetUserId);
+    if (error) {
+      console.error('Erro ao deixar de seguir:', error);
+      setFollowingIds((prev) => new Set(prev).add(targetUserId));
     }
   };
 
@@ -79,25 +124,49 @@ export const HomeProvisoriaView: React.FC = () => {
             <p style={{ textAlign: 'center', color: '#94A3B8' }}>Nenhuma publicação ainda. Seja o primeiro!</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {posts.map((post) => (
-                <div key={post.id} style={{ backgroundColor: '#161F30', border: '1px solid #1E293B', borderRadius: '16px', padding: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                      {post.author_name ? post.author_name.substring(0, 2).toUpperCase() : 'CX'}
+              {posts.map((post) => {
+                const isOwnPost = post.user_id === user?.id;
+                const isFollowing = followingIds.has(post.user_id);
+                return (
+                  <div key={post.id} style={{ backgroundColor: '#161F30', border: '1px solid #1E293B', borderRadius: '16px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                          {post.author_name ? post.author_name.substring(0, 2).toUpperCase() : 'CX'}
+                        </div>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{post.author_name || 'Usuário'}</h4>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{post.author_handle || '@conexa'}</span>
+                        </div>
+                      </div>
+                      {!isOwnPost && post.user_id && (
+                        <button
+                          onClick={() => (isFollowing ? handleUnfollow(post.user_id) : handleFollow(post.user_id))}
+                          style={{
+                            background: isFollowing ? 'transparent' : '#6366F1',
+                            border: isFollowing ? '1px solid #1E293B' : 'none',
+                            color: isFollowing ? '#94A3B8' : '#FFF',
+                            borderRadius: '16px',
+                            padding: '6px 14px',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            flexShrink: 0
+                          }}
+                        >
+                          {isFollowing ? 'Seguindo' : 'Seguir'}
+                        </button>
+                      )}
                     </div>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{post.author_name || 'Usuário'}</h4>
-                      <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{post.author_handle || '@conexa'}</span>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#CBD5E1', lineHeight: '1.4' }}>{post.content}</p>
+                    <div style={{ display: 'flex', gap: '20px', fontSize: '0.85rem', color: '#94A3B8' }}>
+                      <button onClick={() => handleLike(post.id, post.likes_count)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                        ❤️ {post.likes_count || 0}
+                      </button>
                     </div>
                   </div>
-                  <p style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#CBD5E1', lineHeight: '1.4' }}>{post.content}</p>
-                  <div style={{ display: 'flex', gap: '20px', fontSize: '0.85rem', color: '#94A3B8' }}>
-                    <button onClick={() => handleLike(post.id, post.likes_count)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
-                      ❤️ {post.likes_count || 0}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
