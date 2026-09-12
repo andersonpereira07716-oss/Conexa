@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BottomNavigation from '../../components/layout/BottomNavigation';
 import ProfileProvisorioView from './ProfileProvisorioView';
+import { OtherUserProfileView } from './OtherUserProfileView';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -18,6 +19,16 @@ function avatarColor(seed: string) {
   return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
 }
 
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'agora';
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
 export const HomeProvisoriaView: React.FC = () => {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
@@ -30,6 +41,9 @@ export const HomeProvisoriaView: React.FC = () => {
   const [comments, setComments] = useState<Record<string, any[]>>({});
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const fetchPosts = async () => {
     try {
@@ -59,10 +73,17 @@ export const HomeProvisoriaView: React.FC = () => {
     }
   };
 
+  const fetchNotifications = async () => {
+    if (!user) return;
+    const { data, error } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20);
+    if (!error && data) setNotifications(data);
+  };
+
   useEffect(() => {
     fetchPosts();
     fetchFollowing();
     fetchCommentCounts();
+    fetchNotifications();
   }, [user]);
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -79,18 +100,27 @@ export const HomeProvisoriaView: React.FC = () => {
     }
   };
 
-  const handleLike = async (postId: string, currentLikes: number) => {
-    const updatedLikes = (currentLikes || 0) + 1;
-    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, likes_count: updatedLikes } : p)));
-    const { error } = await supabase.from('posts').update({ likes_count: updatedLikes }).eq('id', postId);
-    if (error) setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, likes_count: currentLikes } : p)));
+  const handleLike = async (post: any) => {
+    const updatedLikes = (post.likes_count || 0) + 1;
+    setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, likes_count: updatedLikes } : p)));
+    const { error } = await supabase.from('posts').update({ likes_count: updatedLikes }).eq('id', post.id);
+    if (error) {
+      setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, likes_count: post.likes_count } : p)));
+      return;
+    }
+    if (user && post.user_id && post.user_id !== user.id) {
+      const myName = (user.user_metadata?.full_name as string) || 'Alguém';
+      supabase.from('notifications').insert([{ user_id: post.user_id, actor_id: user.id, actor_name: myName, type: 'like', post_id: post.id }]).then(() => {});
+    }
   };
 
   const handleFollow = async (targetUserId: string) => {
     if (!user || targetUserId === user.id) return;
     setFollowingIds((prev) => new Set(prev).add(targetUserId));
     const { error } = await supabase.from('follows').insert([{ follower_id: user.id, followed_id: targetUserId }]);
-    if (error) setFollowingIds((prev) => { const next = new Set(prev); next.delete(targetUserId); return next; });
+    if (error) { setFollowingIds((prev) => { const next = new Set(prev); next.delete(targetUserId); return next; }); return; }
+    const myName = (user.user_metadata?.full_name as string) || 'Alguém';
+    supabase.from('notifications').insert([{ user_id: targetUserId, actor_id: user.id, actor_name: myName, type: 'follow' }]).then(() => {});
   };
 
   const handleUnfollow = async (targetUserId: string) => {
@@ -114,19 +144,49 @@ export const HomeProvisoriaView: React.FC = () => {
     }
   };
 
-  const handleAddComment = async (postId: string) => {
-    const text = (commentInputs[postId] || '').trim();
+  const handleAddComment = async (post: any) => {
+    const text = (commentInputs[post.id] || '').trim();
     if (!text || !user) return;
     const authorName = (user.user_metadata?.full_name as string) || 'Você';
     const authorHandle = '@' + (user.email?.split('@')[0] || 'usuario');
-    const { data, error } = await supabase.from('comments').insert([{ post_id: postId, user_id: user.id, author_name: authorName, author_handle: authorHandle, content: text }]).select();
-    if (error) { alert('Erro ao comentar: ' + error.message); console.error('Erro comentario:', error); }
-    if (!error && data) {
-      setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), data[0]] }));
-      setCommentCounts((prev) => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }));
-      setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+    const { data, error } = await supabase.from('comments').insert([{ post_id: post.id, user_id: user.id, author_name: authorName, author_handle: authorHandle, content: text }]).select();
+    if (error) { alert('Erro ao comentar: ' + error.message); return; }
+    if (data) {
+      setComments((prev) => ({ ...prev, [post.id]: [...(prev[post.id] || []), data[0]] }));
+      setCommentCounts((prev) => ({ ...prev, [post.id]: (prev[post.id] || 0) + 1 }));
+      setCommentInputs((prev) => ({ ...prev, [post.id]: '' }));
+      if (post.user_id && post.user_id !== user.id) {
+        supabase.from('notifications').insert([{ user_id: post.user_id, actor_id: user.id, actor_name: authorName, type: 'comment', post_id: post.id }]).then(() => {});
+      }
     }
   };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const handleToggleNotifications = async () => {
+    const opening = !notifOpen;
+    setNotifOpen(opening);
+    if (opening && unreadCount > 0 && user) {
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      await supabase.from('notifications').update({ read: true }).eq('user_id', user.id).eq('read', false);
+    }
+  };
+
+  const notifText = (n: any) => {
+    if (n.type === 'follow') return `${n.actor_name} começou a seguir você`;
+    if (n.type === 'like') return `${n.actor_name} curtiu sua publicação`;
+    if (n.type === 'comment') return `${n.actor_name} comentou na sua publicação`;
+    return '';
+  };
+
+  if (viewingUserId) {
+    return (
+      <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', color: '#F8FAFC' }}>
+        <OtherUserProfileView userId={viewingUserId} onBack={() => setViewingUserId(null)} />
+        <BottomNavigation activeTab={activeTab} onTabChange={(tab) => { setViewingUserId(null); setActiveTab(tab); }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', color: '#F8FAFC', position: 'relative' }}>
@@ -134,10 +194,29 @@ export const HomeProvisoriaView: React.FC = () => {
         <ProfileProvisorioView />
       ) : (
         <div style={{ padding: '20px', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', position: 'relative' }}>
             <h1 style={{ color: '#818CF8', margin: 0, fontSize: '1.6rem', fontWeight: 800, letterSpacing: '0.5px' }}>CONEXA</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#161F30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', border: '1px solid #1E293B', cursor: 'pointer' }}>🔔</div>
+              <div style={{ position: 'relative' }}>
+                <div onClick={handleToggleNotifications} style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: '#161F30', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', border: '1px solid #1E293B', cursor: 'pointer' }}>🔔</div>
+                {unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: '-4px', right: '-4px', backgroundColor: '#EF4444', color: '#FFF', fontSize: '0.65rem', fontWeight: 700, borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{unreadCount}</span>
+                )}
+                {notifOpen && (
+                  <div style={{ position: 'absolute', top: '46px', right: 0, width: '280px', maxHeight: '360px', overflowY: 'auto', backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 20 }}>
+                    {notifications.length === 0 ? (
+                      <p style={{ padding: '16px', color: '#64748B', fontSize: '0.8rem', textAlign: 'center' }}>Nenhuma notificação ainda.</p>
+                    ) : (
+                      notifications.map((n) => (
+                        <div key={n.id} onClick={() => { setNotifOpen(false); setViewingUserId(n.actor_id); }} style={{ padding: '12px 14px', borderBottom: '1px solid #1E293B', fontSize: '0.8rem', cursor: 'pointer', backgroundColor: n.read ? 'transparent' : '#1B2436' }}>
+                          <p style={{ margin: 0, color: '#E2E8F0' }}>{notifText(n)}</p>
+                          <span style={{ fontSize: '0.7rem', color: '#64748B' }}>{timeAgo(n.created_at)}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
               <button onClick={signOut} style={{ background: 'none', border: '1px solid #1E293B', color: '#94A3B8', borderRadius: '20px', padding: '7px 14px', fontSize: '0.75rem', cursor: 'pointer' }}>Sair</button>
             </div>
           </header>
@@ -145,7 +224,7 @@ export const HomeProvisoriaView: React.FC = () => {
           <form onSubmit={handleCreatePost} style={{ backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '18px', padding: '16px', marginBottom: '24px', boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}>
             <textarea placeholder="O que está acontecendo?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={2} style={{ width: '100%', backgroundColor: 'transparent', border: 'none', color: '#FFF', fontSize: '0.95rem', resize: 'none', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button type="submit" disabled={!newPost.trim()} style={{ backgroundColor: newPost.trim() ? '#6366F1' : '#334155', color: '#FFF', border: 'none', padding: '9px 20px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem', cursor: newPost.trim() ? 'pointer' : 'default', transition: 'background-color 0.15s' }}>Publicar</button>
+              <button type="submit" disabled={!newPost.trim()} style={{ backgroundColor: newPost.trim() ? '#6366F1' : '#334155', color: '#FFF', border: 'none', padding: '9px 20px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem', cursor: newPost.trim() ? 'pointer' : 'default' }}>Publicar</button>
             </div>
           </form>
 
@@ -162,7 +241,10 @@ export const HomeProvisoriaView: React.FC = () => {
                 return (
                   <div key={post.id} style={{ backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '18px', padding: '16px', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div
+                        onClick={() => { if (post.user_id) { isOwnPost ? setActiveTab('profile') : setViewingUserId(post.user_id); } }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: post.user_id ? 'pointer' : 'default' }}
+                      >
                         <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: avatarColor(post.author_handle || post.id), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: '#0B0F17' }}>
                           {initials}
                         </div>
@@ -182,7 +264,7 @@ export const HomeProvisoriaView: React.FC = () => {
                     </div>
                     <p style={{ margin: '0 0 14px 0', fontSize: '0.92rem', color: '#E2E8F0', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{post.content}</p>
                     <div style={{ display: 'flex', gap: '22px', fontSize: '0.85rem', color: '#94A3B8', borderTop: '1px solid #1E293B', paddingTop: '10px' }}>
-                      <button onClick={() => handleLike(post.id, post.likes_count)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                      <button onClick={() => handleLike(post)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
                         ❤️ {post.likes_count || 0}
                       </button>
                       <button onClick={() => toggleComments(post.id)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
@@ -217,12 +299,12 @@ export const HomeProvisoriaView: React.FC = () => {
                           <input
                             value={commentInputs[post.id] || ''}
                             onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post.id); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post); }}
                             placeholder="Escreva um comentário..."
                             style={{ flex: 1, backgroundColor: '#0F1620', border: '1px solid #232C3D', borderRadius: '14px', padding: '8px 12px', color: '#FFF', fontSize: '0.82rem', outline: 'none' }}
                           />
                           <button
-                            onClick={() => handleAddComment(post.id)}
+                            onClick={() => handleAddComment(post)}
                             disabled={!(commentInputs[post.id] || '').trim()}
                             style={{ background: (commentInputs[post.id] || '').trim() ? '#6366F1' : '#334155', border: 'none', color: '#FFF', borderRadius: '14px', padding: '0 16px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
                           >
@@ -238,7 +320,7 @@ export const HomeProvisoriaView: React.FC = () => {
           )}
         </div>
       )}
-      <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} onTabChange={(tab) => { setViewingUserId(null); setActiveTab(tab); }} />
     </div>
   );
 };
