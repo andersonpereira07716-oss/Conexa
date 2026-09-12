@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { NotificationsView } from './NotificationsView';
+import { ExploreView } from './ExploreView';
 
 interface Post {
   id: string;
@@ -40,7 +41,10 @@ export const FeedView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Telas
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showExplore, setShowExplore] = useState(false);
   const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
 
   // Modal de Comentários
@@ -355,12 +359,38 @@ export const FeedView: React.FC = () => {
     );
   }
 
+  if (showExplore) {
+    return (
+      <ExploreView
+        onBack={() => {
+          setShowExplore(false);
+          fetchPosts();
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ color: '#818CF8', fontSize: '24px', fontWeight: 'bold' }}>CONEXA</h1>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowExplore(true)}
+            style={{
+              backgroundColor: '#1E293B',
+              color: '#FFF',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            🔍 Busca
+          </button>
+
           <button
             onClick={() => setShowNotifications(true)}
             style={{
@@ -374,7 +404,7 @@ export const FeedView: React.FC = () => {
               fontSize: '14px',
             }}
           >
-            🔔 Notificações
+            🔔
             {unreadCount > 0 && (
               <span
                 style={{
@@ -400,9 +430,10 @@ export const FeedView: React.FC = () => {
               backgroundColor: '#1E293B',
               color: '#94A3B8',
               border: 'none',
-              padding: '8px 16px',
+              padding: '8px 14px',
               borderRadius: '20px',
               cursor: 'pointer',
+              fontSize: '14px',
             }}
           >
             Sair
