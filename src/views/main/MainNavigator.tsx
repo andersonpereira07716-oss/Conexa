@@ -1,52 +1,53 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Theme } from '../../styles/theme';
 import FeedView from './FeedView';
 import ConversationsListView from './ConversationsListView';
 import MessagesView from './MessagesView';
+import TrendingTopicsView from './TrendingTopicsView';
 import NotificationsView from './NotificationsView';
 import ProfileView from './ProfileView';
 
-export default function MainNavigator() {
-  const [currentTab, setCurrentTab] = useState<'feed' | 'chats' | 'notifications' | 'profile'>('feed');
-  const [activeChat, setActiveChat] = useState<{ id: string; name: string } | null>(null);
+export function MainNavigator() {
+  const [currentTab, setCurrentTab] = useState<'feed' | 'chats' | 'trending' | 'notifications' | 'profile'>('feed');
+  const [activeChat, setActiveChat] = useState<{ userId: string; username: string } | null>(null);
+
+  function handleSelectUser(userId: string, username: string) {
+    setActiveChat({ userId, username });
+    setCurrentTab('chats');
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {activeChat ? (
-          <View style={{ flex: 1 }}>
-            <TouchableOpacity style={styles.backButton} onPress={() => setActiveChat(null)}>
-              <Text style={styles.backText}>← Voltar para Conversas</Text>
-            </TouchableOpacity>
-            <MessagesView receiverId={activeChat.id} receiverName={activeChat.name} />
-          </View>
-        ) : (
-          <>
-            {currentTab === 'feed' && <FeedView />}
-            {currentTab === 'chats' && (
-              <ConversationsListView 
-                onSelectUser={(id, name) => setActiveChat({ id, name })} 
-              />
-            )}
-            {currentTab === 'notifications' && <NotificationsView />}
-            {currentTab === 'profile' && <ProfileView />}
-          </>
+        {currentTab === 'feed' && <FeedView />}
+        {currentTab === 'chats' && (
+          activeChat ? (
+            <MessagesView receiverId={activeChat.userId} receiverName={activeChat.username} onBack={() => setActiveChat(null)} />
+          ) : (
+            <ConversationsListView onSelectUser={handleSelectUser} />
+          )
         )}
+        {currentTab === 'trending' && <TrendingTopicsView onSelectHashtag={(tag) => {}} />}
+        {currentTab === 'notifications' && <NotificationsView onBack={() => setCurrentTab('feed')} />}
+        {currentTab === 'profile' && <ProfileView />}
       </View>
 
-      {/* Barra de Abas Inferior */}
       <View style={styles.tabBar}>
-        <TouchableOpacity style={styles.tabItem} onPress={() => { setCurrentTab('feed'); setActiveChat(null); }}>
-          <Text style={[styles.tabText, currentTab === 'feed' && !activeChat && styles.activeTab]}>🏠 Feed</Text>
+        <TouchableOpacity style={styles.tabItem} onPress={() => { setActiveChat(null); setCurrentTab('feed'); }}>
+          <Text style={[styles.tabText, currentTab === 'feed' && styles.activeTabText]}>🏠 Feed</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem} onPress={() => { setCurrentTab('chats'); setActiveChat(null); }}>
-          <Text style={[styles.tabText, currentTab === 'chats' || activeChat && styles.activeTab]}>💬 Chat</Text>
+        <TouchableOpacity style={styles.tabItem} onPress={() => { setActiveChat(null); setCurrentTab('chats'); }}>
+          <Text style={[styles.tabText, (currentTab === 'chats' || activeChat) && styles.activeTabText]}>💬 Chat</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem} onPress={() => { setCurrentTab('notifications'); setActiveChat(null); }}>
-          <Text style={[styles.tabText, currentTab === 'notifications' && !activeChat && styles.activeTab]}>🔔 Avisos</Text>
+        <TouchableOpacity style={styles.tabItem} onPress={() => { setActiveChat(null); setCurrentTab('trending'); }}>
+          <Text style={[styles.tabText, currentTab === 'trending' && styles.activeTabText]}>🔥 Em alta</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem} onPress={() => { setCurrentTab('profile'); setActiveChat(null); }}>
-          <Text style={[styles.tabText, currentTab === 'profile' && !activeChat && styles.activeTab]}>👤 Perfil</Text>
+        <TouchableOpacity style={styles.tabItem} onPress={() => { setActiveChat(null); setCurrentTab('notifications'); }}>
+          <Text style={[styles.tabText, currentTab === 'notifications' && styles.activeTabText]}>🔔 Avisos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.tabItem} onPress={() => { setActiveChat(null); setCurrentTab('profile'); }}>
+          <Text style={[styles.tabText, currentTab === 'profile' && styles.activeTabText]}>👤 Perfil</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -54,12 +55,12 @@ export default function MainNavigator() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f172a' },
+  container: { flex: 1, backgroundColor: Theme.colors.background },
   content: { flex: 1 },
-  backButton: { padding: 12, backgroundColor: '#1e293b', borderBottomWidth: 1, borderBottomColor: '#334155' },
-  backText: { color: '#38bdf8', fontWeight: 'bold', fontSize: 14 },
-  tabBar: { height: 60, backgroundColor: '#1e293b', flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#334155', justifyContent: 'space-around', alignItems: 'center' },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  tabText: { color: '#94a3b8', fontSize: 12 },
-  activeTab: { color: '#38bdf8', fontWeight: 'bold' }
+  tabBar: { flexDirection: 'row', backgroundColor: Theme.colors.surface, borderTopWidth: 1, borderTopColor: Theme.colors.border, height: 60, justifyContent: 'space-around', alignItems: 'center' },
+  tabItem: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  tabText: { color: Theme.colors.textSecondary, fontSize: 11, fontWeight: '600' },
+  activeTabText: { color: Theme.colors.accent, fontWeight: 'bold' }
 });
+
+export default MainNavigator;

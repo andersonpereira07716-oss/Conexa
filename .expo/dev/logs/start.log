@@ -1,0 +1,8 @@
+{"_e":"root:init","_t":1789204702431,"format":"v0-jsonl","version":"57.0.22"}
+{"_e":"env:mode","_t":1789204702435,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789204702454,"mode":"development","files":["../../../.env"],"env":{"VITE_SUPABASE_ANON_KEY":"sb_publishable_XoIodSQcq6K-0bIppz0eKg_tL8JTaC3","VITE_SUPABASE_URL":"https://wwghosqobgpqaaeywqqg.supabase.co"}}
+{"_e":"devserver:start","_t":1789204703882,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../../../app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789204706176,"serverRoot":"../../..","projectRoot":"../../..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"metro:server_log","_t":1789204706829,"level":"error","data":["An unknown error occurred while installing React Native DevTools. Details:\n\nCannot read properties of undefined (reading 'arm64')"]}
+{"_e":"expo:dev-tools-plugin:load","_t":1789204707755,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789204710778,"atlas":false,"workers":6,"host":"::","port":8081}

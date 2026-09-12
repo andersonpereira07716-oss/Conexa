@@ -1,127 +1,69 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../services/supabase';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { supabase } from '../../services/supabaseClient';
+import { Theme } from '../../styles/theme';
 
-interface HashtagCount {
-  tag: string;
-  count: number;
-}
+const SafeFlatList = FlatList as unknown as React.ComponentType<any>;
 
 interface TrendingTopicsViewProps {
-  onBack: () => void;
-  onSelectTag?: (tag: string) => void;
+  onSelectHashtag: (hashtag: string) => void;
 }
 
-export const TrendingTopicsView: React.FC<TrendingTopicsViewProps> = ({ onBack, onSelectTag }) => {
-  const [hashtags, setHashtags] = useState<HashtagCount[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function TrendingTopicsView({ onSelectHashtag }: TrendingTopicsViewProps) {
+  const [topics, setTopics] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchTrendingHashtags();
+    fetchTrending();
   }, []);
 
-  const fetchTrendingHashtags = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('posts')
-        .select('content')
-        .order('created_at', { ascending: false })
-        .limit(100);
+  async function fetchTrending() {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('content');
 
-      if (error) throw error;
+    if (!error && data) {
+      const hashtagCounts: { [key: string]: number } = {};
+      data.forEach((post) => {
+        const matches = post.content.match(/#[\wá-úÁ-Ú]+/g);
+        if (matches) {
+          matches.forEach((tag: string) => {
+            hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+          });
+        }
+      });
 
-      const counts: { [key: string]: number } = {};
-      const regex = /#[\wà-úÀ-Ú]+/gi;
+      const formatted = Object.keys(hashtagCounts).map((tag) => ({
+        tag,
+        count: hashtagCounts[tag],
+      })).sort((a, b) => b.count - a.count);
 
-      if (data) {
-        data.forEach((post) => {
-          if (post.content) {
-            const matches = post.content.match(regex);
-            if (matches) {
-              const uniqueTagsInPost = Array.from(new Set(matches.map((t) => t.toLowerCase())));
-              uniqueTagsInPost.forEach((tag) => {
-                counts[tag] = (counts[tag] || 0) + 1;
-              });
-            }
-          }
-        });
-      }
-
-      const sorted = Object.keys(counts)
-        .map((tag) => ({ tag, count: counts[tag] }))
-        .sort((a, b) => b.count - a.count);
-
-      setHashtags(sorted);
-    } catch (err) {
-      console.error('Erro ao carregar Trending Topics:', err);
-    } finally {
-      setLoading(false);
+      setTopics(formatted);
     }
-  };
+  }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <button
-          onClick={onBack}
-          style={{
-            backgroundColor: '#1E293B',
-            color: '#FFF',
-            border: 'none',
-            padding: '8px 14px',
-            borderRadius: '20px',
-            cursor: 'pointer',
-            fontSize: '14px',
-          }}
-        >
-          ← Voltar
-        </button>
-        <h2 style={{ color: '#FFF', margin: 0, fontSize: '20px' }}>🔥 Assuntos do Momento</h2>
-      </div>
-
-      <div style={{ backgroundColor: '#131B2E', padding: '20px', borderRadius: '16px' }}>
-        {loading ? (
-          <div style={{ textAlign: 'center', color: '#6366F1', padding: '20px' }}>Carregando tendências...</div>
-        ) : hashtags.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#94A3B8', padding: '20px' }}>
-            Nenhuma hashtag em alta no momento. Crie um post usando `#` para começar!
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {hashtags.map((item, index) => (
-              <div
-                key={item.tag}
-                onClick={() => onSelectTag && onSelectTag(item.tag)}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  backgroundColor: '#0B0F17',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                }}
-              >
-                <div>
-                  <span style={{ fontSize: '12px', color: '#94A3B8', display: 'block' }}>
-                    #{index + 1} · Tendência no Conexa
-                  </span>
-                  <span style={{ fontWeight: 'bold', color: '#818CF8', fontSize: '16px' }}>
-                    {item.tag}
-                  </span>
-                </div>
-                <div style={{ fontSize: '13px', color: '#94A3B8' }}>
-                  {item.count} {item.count === 1 ? 'publicação' : 'publicações'}
-                </div>
-              </div>
-            ))}
-          </div>
+    <View style={styles.container}>
+      <Text style={styles.title}>Assuntos em Alta</Text>
+      <SafeFlatList
+        data={topics}
+        keyExtractor={(item: any) => item.tag}
+        renderItem={({ item }: { item: any }) => (
+          <TouchableOpacity style={styles.item} onPress={() => onSelectHashtag(item.tag.replace('#', ''))}>
+            <Text style={styles.tag}>{item.tag}</Text>
+            <Text style={styles.count}>{item.count} publicações</Text>
+          </TouchableOpacity>
         )}
-      </div>
-    </div>
+        ListEmptyComponent={<Text style={styles.empty}>Nenhuma hashtag encontrada ainda.</Text>}
+      />
+    </View>
   );
-};
+}
 
-export default TrendingTopicsView;
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Theme.colors.background, padding: 16 },
+  title: { fontSize: 20, fontWeight: 'bold', color: Theme.colors.textPrimary, marginBottom: 16 },
+  item: { backgroundColor: Theme.colors.surface, padding: 16, borderRadius: Theme.radius.md, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: Theme.colors.border },
+  tag: { fontSize: 16, fontWeight: 'bold', color: Theme.colors.accent },
+  count: { fontSize: 12, color: Theme.colors.textSecondary },
+  empty: { textAlign: 'center', color: Theme.colors.textSecondary, marginTop: 24 }
+});
