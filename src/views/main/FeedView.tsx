@@ -5,11 +5,13 @@ import { useAuth } from '../../context/AuthContext';
 interface Post {
   id: string;
   content: string;
+  image_url?: string;
   created_at: string;
   user_id: string;
   profiles?: {
     full_name: string;
     username: string;
+    avatar_url?: string;
   };
   likes_count?: number;
   comments_count?: number;
@@ -31,6 +33,8 @@ export const FeedView: React.FC = () => {
   const { user, signOut } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [showImageInput, setShowImageInput] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,16 +56,16 @@ export const FeedView: React.FC = () => {
         .select(`
           id,
           content,
+          image_url,
           created_at,
           user_id,
-          profiles (full_name, username)
+          profiles (full_name, username, avatar_url)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
-        // Carregar contagem de curtidas para cada post
         const postsWithCounts = await Promise.all(
           data.map(async (post) => {
             const { count: likesCount } = await supabase
@@ -103,15 +107,23 @@ export const FeedView: React.FC = () => {
   };
 
   const handleCreatePost = async () => {
-    if (!newPost.trim() || !user) return;
+    if ((!newPost.trim() && !imageUrl.trim()) || !user) return;
     setSubmitting(true);
     try {
       const { error } = await supabase
         .from('posts')
-        .insert([{ content: newPost.trim(), user_id: user.id }]);
+        .insert([
+          { 
+            content: newPost.trim(), 
+            image_url: imageUrl.trim() || null, 
+            user_id: user.id 
+          }
+        ]);
 
       if (error) throw error;
       setNewPost('');
+      setImageUrl('');
+      setShowImageInput(false);
       fetchPosts();
     } catch (err) {
       console.error('Erro ao criar post:', err);
@@ -153,7 +165,6 @@ export const FeedView: React.FC = () => {
     }
   };
 
-  // Carregar Comentários de um Post
   const handleOpenComments = async (post: Post) => {
     setSelectedPost(post);
     setLoadingComments(true);
@@ -189,7 +200,7 @@ export const FeedView: React.FC = () => {
       if (error) throw error;
       setNewComment('');
       handleOpenComments(selectedPost);
-      fetchPosts(); // Atualizar contador no feed
+      fetchPosts();
     } catch (err) {
       console.error('Erro ao adicionar comentário:', err);
     }
@@ -234,22 +245,66 @@ export const FeedView: React.FC = () => {
             fontSize: '16px',
             resize: 'none',
             outline: 'none',
-            minHeight: '80px',
+            minHeight: '70px',
           }}
         />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+
+        {/* Input da Imagem (ocultável) */}
+        {showImageInput && (
+          <div style={{ marginBottom: '12px' }}>
+            <input
+              type="text"
+              placeholder="Cole a URL da imagem (ex: https://site.com/foto.jpg)"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              style={{
+                width: '100%',
+                backgroundColor: '#0B0F17',
+                border: '1px solid #1E293B',
+                borderRadius: '10px',
+                padding: '8px 12px',
+                color: '#FFF',
+                outline: 'none',
+                fontSize: '14px',
+              }}
+            />
+            {imageUrl.trim() && (
+              <div style={{ marginTop: '8px', borderRadius: '10px', overflow: 'hidden', maxHeight: '180px' }}>
+                <img src={imageUrl} alt="Prévia" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+          <button
+            onClick={() => setShowImageInput(!showImageInput)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: showImageInput ? '#818CF8' : '#94A3B8',
+              cursor: 'pointer',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            🖼️ {showImageInput ? 'Remover Imagem' : 'Adicionar Foto'}
+          </button>
+
           <button
             onClick={handleCreatePost}
-            disabled={submitting || !newPost.trim()}
+            disabled={submitting || (!newPost.trim() && !imageUrl.trim())}
             style={{
               backgroundColor: '#6366F1',
               color: '#FFF',
               border: 'none',
-              padding: '10px 20px',
+              padding: '8px 20px',
               borderRadius: '20px',
               fontWeight: 'bold',
               cursor: 'pointer',
-              opacity: submitting || !newPost.trim() ? 0.5 : 1,
+              opacity: submitting || (!newPost.trim() && !imageUrl.trim()) ? 0.5 : 1,
             }}
           >
             {submitting ? 'Publicando...' : 'Publicar'}
@@ -267,31 +322,53 @@ export const FeedView: React.FC = () => {
           <div key={post.id} style={{ backgroundColor: '#131B2E', padding: '16px', borderRadius: '16px', marginBottom: '16px' }}>
             {/* Header do Autor */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  backgroundColor: '#6366F1',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 'bold',
-                  marginRight: '12px',
-                }}
-              >
-                {getInitials(post.profiles?.full_name)}
-              </div>
+              {post.profiles?.avatar_url ? (
+                <img
+                  src={post.profiles.avatar_url}
+                  alt="Avatar"
+                  style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', marginRight: '12px' }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: '#6366F1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    marginRight: '12px',
+                    color: '#FFF'
+                  }}
+                >
+                  {getInitials(post.profiles?.full_name)}
+                </div>
+              )}
               <div>
                 <div style={{ fontWeight: 'bold', color: '#FFF' }}>{post.profiles?.full_name || 'Usuário'}</div>
                 <div style={{ fontSize: '12px', color: '#94A3B8' }}>@{post.profiles?.username || 'usuario'}</div>
               </div>
             </div>
 
-            {/* Conteúdo */}
-            <div style={{ color: '#E2E8F0', fontSize: '15px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
-              {post.content}
-            </div>
+            {/* Conteúdo de Texto */}
+            {post.content && (
+              <div style={{ color: '#E2E8F0', fontSize: '15px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
+                {post.content}
+              </div>
+            )}
+
+            {/* Imagem do Post */}
+            {post.image_url && (
+              <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '12px', backgroundColor: '#0B0F17' }}>
+                <img
+                  src={post.image_url}
+                  alt="Post Mídia"
+                  style={{ width: '100%', maxHeight: '400px', objectFit: 'cover', display: 'block' }}
+                />
+              </div>
+            )}
 
             {/* Ações (Curtir / Comentar) */}
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', color: '#94A3B8' }}>
