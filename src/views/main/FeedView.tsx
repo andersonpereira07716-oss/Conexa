@@ -3,6 +3,7 @@ import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { NotificationsView } from './NotificationsView';
 import { ExploreView } from './ExploreView';
+import { ProfileEditView } from './ProfileEditView';
 
 interface Post {
   id: string;
@@ -45,6 +46,7 @@ export const FeedView: React.FC = () => {
   // Telas
   const [showNotifications, setShowNotifications] = useState(false);
   const [showExplore, setShowExplore] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
 
   // Estados de Edição de Post
@@ -446,6 +448,17 @@ export const FeedView: React.FC = () => {
     );
   }
 
+  if (showEditProfile) {
+    return (
+      <ProfileEditView
+        onBack={() => {
+          setShowEditProfile(false);
+          fetchPosts();
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
       {/* Top Header */}
@@ -465,6 +478,21 @@ export const FeedView: React.FC = () => {
             }}
           >
             🔍 Busca
+          </button>
+
+          <button
+            onClick={() => setShowEditProfile(true)}
+            style={{
+              backgroundColor: '#1E293B',
+              color: '#FFF',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '14px',
+            }}
+          >
+            👤 Perfil
           </button>
 
           <button
