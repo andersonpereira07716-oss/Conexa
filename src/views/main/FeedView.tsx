@@ -5,6 +5,7 @@ import { NotificationsView } from './NotificationsView';
 import { ExploreView } from './ExploreView';
 import { ProfileEditView } from './ProfileEditView';
 import { TrendingTopicsView } from './TrendingTopicsView';
+import { DirectMessagesView } from './DirectMessagesView';
 
 interface Post {
   id: string;
@@ -44,24 +45,21 @@ export const FeedView: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Telas
   const [showNotifications, setShowNotifications] = useState(false);
   const [showExplore, setShowExplore] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showTrending, setShowTrending] = useState(false);
+  const [showDirectMessages, setShowDirectMessages] = useState(false);
   const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
 
-  // Estados de Edição de Post
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editingPostContent, setEditingPostContent] = useState('');
 
-  // Modal de Comentários
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
 
-  // Estados de Edição de Comentário
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
 
@@ -469,12 +467,36 @@ export const FeedView: React.FC = () => {
     );
   }
 
+  if (showDirectMessages) {
+    return (
+      <DirectMessagesView
+        onBack={() => {
+          setShowDirectMessages(false);
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
-      {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ color: '#818CF8', fontSize: '24px', fontWeight: 'bold' }}>CONEXA</h1>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowDirectMessages(true)}
+            style={{
+              backgroundColor: '#1E293B',
+              color: '#FFF',
+              border: 'none',
+              padding: '8px 10px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '13px',
+            }}
+          >
+            💬 Chat
+          </button>
+
           <button
             onClick={() => setShowTrending(true)}
             style={{
@@ -570,7 +592,6 @@ export const FeedView: React.FC = () => {
         </div>
       </div>
 
-      {/* Abas Para você / Seguindo */}
       <div style={{ display: 'flex', borderBottom: '1px solid #1E293B', marginBottom: '20px' }}>
         <button
           onClick={() => setActiveTab('for_you')}
@@ -606,7 +627,6 @@ export const FeedView: React.FC = () => {
         </button>
       </div>
 
-      {/* Caixa de Novo Post */}
       <div style={{ backgroundColor: '#131B2E', padding: '16px', borderRadius: '16px', marginBottom: '20px' }}>
         <textarea
           placeholder="O que está acontecendo? Use #hashtags!"
@@ -684,7 +704,6 @@ export const FeedView: React.FC = () => {
         </div>
       </div>
 
-      {/* Lista de Posts */}
       {loading ? (
         <div style={{ textAlign: 'center', color: '#6366F1', padding: '20px' }}>Carregando feed...</div>
       ) : posts.length === 0 ? (
@@ -728,7 +747,6 @@ export const FeedView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Ações do autor ou Botão Seguir */}
               {user && user.id === post.user_id ? (
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
@@ -765,7 +783,6 @@ export const FeedView: React.FC = () => {
               )}
             </div>
 
-            {/* Conteúdo ou formulário de edição */}
             {editingPostId === post.id ? (
               <div style={{ marginBottom: '12px' }}>
                 <textarea
@@ -867,7 +884,6 @@ export const FeedView: React.FC = () => {
         ))
       )}
 
-      {/* Modal de Comentários */}
       {selectedPost && (
         <div
           style={{
