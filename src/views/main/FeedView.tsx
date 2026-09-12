@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Share, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Share, ScrollView, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../services/supabaseClient';
 import { Theme } from '../../styles/theme';
 
 interface Post {
   id: string;
   content: string;
+  image_url?: string;
   created_at: string;
   user_id: string;
   community_id?: string;
-  profiles?: { username: string };
+  profiles?: { username: string; avatar_url?: string };
   communities?: { name: string; slug: string };
   likes_count?: number;
   user_liked?: boolean;
@@ -26,6 +28,7 @@ export default function FeedView() {
   const [communities, setCommunities] = useState<Community[]>([]);
   const [selectedCommunity, setSelectedCommunity] = useState<string | null>(null);
   const [newPostContent, setNewPostContent] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -51,10 +54,11 @@ export default function FeedView() {
         .select(`
           id,
           content,
+          image_url,
           created_at,
           user_id,
           community_id,
-          profiles ( username ),
+          profiles ( username, avatar_url ),
           communities ( name, slug ),
           post_likes ( user_id )
         `)
@@ -79,6 +83,42 @@ export default function FeedView() {
     }
   }
 
+  async function pickImage() {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0].uri) {
+      setImageUri(result.assets[0].uri);
+    }
+  }
+
+  async function uploadImageAndGetUrl(uri: string): Promise<string | null> {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const fileName = `post_${Date.now()}.jpg`;
+      const filePath = `posts/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('conexa-storage')
+        .upload(filePath, blob);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('conexa-storage')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error: any) {
+      console.error('Erro no upload da imagem:', error.message);
+      return null;
+    }
+  }
+
   async function togglePostLike(postId: string, userLiked: boolean) {
     if (!currentUserId) return;
     try {
@@ -94,22 +134,29 @@ export default function FeedView() {
   }
 
   async function createPost() {
-    if (!newPostContent.trim()) return;
+    if (!newPostContent.trim() && !imageUri) return;
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      let uploadedImageUrl = null;
+      if (imageUri) {
+        uploadedImageUrl = await uploadImageAndGetUrl(imageUri);
+      }
+
       const defaultCommunity = communities[0]?.id;
 
       const { error } = await supabase.from('posts').insert({
         content: newPostContent,
+        image_url: uploadedImageUrl,
         user_id: user.id,
         community_id: selectedCommunity || defaultCommunity
       });
 
       if (error) throw error;
       setNewPostContent('');
+      setImageUri(null);
       fetchPosts();
     } catch (error: any) {
       Alert.alert('Erro', error.message);
@@ -136,7 +183,6 @@ export default function FeedView() {
     <View style={styles.container}>
       <Text style={styles.title}>Conexa Feed</Text>
 
-      {/* Seletor de Nichos / Comunidades */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
         <TouchableOpacity 
           style={[styles.filterChip, !selectedCommunity && styles.filterChipActive]}
@@ -164,9 +210,24 @@ export default function FeedView() {
           onChangeText={setNewPostContent}
           multiline
         />
-        <TouchableOpacity style={styles.button} onPress={createPost} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? 'Publicando...' : 'Publicar'}</Text>
-        </TouchableOpacity>
+
+        {imageUri && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+            <TouchableOpacity onPress={() => setImageUri(null)} style={styles.removeImageBtn}>
+              <Text style={styles.removeImageText}>✕ Remover</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.postActionsBar}>
+          <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage}>
+            <Text style={styles.imagePickerText}>🖼️ Adicionar Foto</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={createPost} disabled={loading}>
+            <Text style={styles.buttonText}>{loading ? 'Publicando...' : 'Publicar'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FlatList
@@ -187,15 +248,20 @@ export default function FeedView() {
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={styles.postContent}>{item.content}</Text>
+
+            {item.content ? <Text style={styles.postContent}>{item.content}</Text> : null}
+
+            {item.image_url && (
+              <Image source={{ uri: item.image_url }} style={styles.postImage} />
+            )}
             
-            <View style={styles.postActions}>
+            <View style={styles.postFooterActions}>
               <TouchableOpacity onPress={() => togglePostLike(item.id, !!item.user_liked)}>
                 <Text style={[styles.likeText, item.user_liked && styles.liked]}>
                   💜 {item.likes_count || 0} Curtidas
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => Share.share({ message: `Veja este post no Conexa: "${item.content}"` })}>
+              <TouchableOpacity onPress={() => Share.share({ message: `Veja este post no Conexa: "${item.content || 'Foto'}"` })}>
                 <Text style={styles.shareText}>Compartilhar ↗</Text>
               </TouchableOpacity>
             </View>
@@ -217,15 +283,23 @@ const styles = StyleSheet.create({
   filterTextActive: { color: '#fff' },
   inputContainer: { backgroundColor: Theme.colors.surface, padding: 14, borderRadius: Theme.radius.md, marginBottom: 16, borderWidth: 1, borderColor: Theme.colors.border },
   input: { color: Theme.colors.textPrimary, minHeight: 60, textAlignVertical: 'top', marginBottom: 10, fontSize: 15 },
-  button: { backgroundColor: Theme.colors.primary, padding: 12, borderRadius: Theme.radius.sm, alignItems: 'center' },
+  imagePreviewContainer: { marginBottom: 12, position: 'relative' },
+  imagePreview: { width: '100%', height: 160, borderRadius: Theme.radius.sm, resizeMode: 'cover' },
+  removeImageBtn: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  removeImageText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+  postActionsBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: Theme.colors.border, paddingTop: 10 },
+  imagePickerBtn: { padding: 8 },
+  imagePickerText: { color: Theme.colors.accent, fontWeight: '600', fontSize: 13 },
+  button: { backgroundColor: Theme.colors.primary, paddingHorizontal: 18, paddingVertical: 10, borderRadius: Theme.radius.sm, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
   postCard: { backgroundColor: Theme.colors.surface, padding: 16, borderRadius: Theme.radius.md, marginBottom: 12, borderWidth: 1, borderColor: Theme.colors.border },
   postHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   postAuthor: { color: Theme.colors.accent, fontWeight: 'bold', fontSize: 14 },
   communityTag: { color: Theme.colors.textSecondary, fontSize: 11, marginTop: 2 },
   deleteText: { color: Theme.colors.danger, fontSize: 12 },
-  postContent: { color: Theme.colors.textPrimary, fontSize: 15, marginBottom: 12, lineHeight: 22 },
-  postActions: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Theme.colors.border, paddingTop: 10 },
+  postContent: { color: Theme.colors.textPrimary, fontSize: 15, marginBottom: 10, lineHeight: 22 },
+  postImage: { width: '100%', height: 200, borderRadius: Theme.radius.sm, marginBottom: 12, resizeMode: 'cover' },
+  postFooterActions: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Theme.colors.border, paddingTop: 10 },
   likeText: { color: Theme.colors.textSecondary, fontSize: 13 },
   liked: { color: Theme.colors.accent, fontWeight: 'bold' },
   shareText: { color: Theme.colors.textSecondary, fontSize: 13 },
