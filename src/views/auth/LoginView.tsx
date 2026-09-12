@@ -1,77 +1,53 @@
 import React, { useState } from 'react';
-import { supabase } from '../../supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 
-export function LoginView({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+export const LoginView: React.FC<{ onNavigate: (page: string) => void }> = ({ onNavigate }) => {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setErrorMsg(error.message);
-      setLoading(false);
-    } else {
-      setLoading(false);
-      onLoginSuccess();
+  const handleLogin = async () => {
+    setError('');
+    if (!email.trim() || !password) {
+      setError('Preencha e-mail e senha.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await signIn(email.trim(), password);
+    } catch (err: any) {
+      setError(err?.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : (err?.message || 'Erro ao entrar.'));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-slate-900 p-8 shadow-xl border border-slate-800">
-        <h2 className="text-2xl font-bold text-center text-white mb-2">Conexa</h2>
-        <p className="text-sm text-center text-slate-400 mb-6">Entre na sua conta para continuar</p>
+    <div style={{ padding: '24px', backgroundColor: '#0B0F17', minHeight: '100vh', color: '#F8FAFC', display: 'flex', flexDirection: 'column', justifyContent: 'center', boxSizing: 'border-box' }}>
+      <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Entrar na CONEXA</h2>
+      <p style={{ color: '#94A3B8', marginBottom: '24px' }}>Digite seus dados para acessar sua conta</p>
 
-        {errorMsg && (
-          <div className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400 border border-red-500/20">
-            {errorMsg}
-          </div>
-        )}
+      {error && (
+        <p style={{ color: '#FF5555', backgroundColor: '#2A1215', padding: '10px 14px', borderRadius: '10px', marginBottom: '16px', fontSize: '0.85rem' }}>
+          {error}
+        </p>
+      )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">E-mail</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              required
-              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
-            />
-          </div>
+      <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', marginBottom: '16px' }} />
+      <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', marginBottom: '16px' }} />
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Senha</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-              required
-              className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
-            />
-          </div>
+      <button onClick={handleLogin} disabled={submitting} style={{ padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: submitting ? '#334155' : '#6366F1', color: '#FFF', fontWeight: 'bold', marginBottom: '16px', cursor: submitting ? 'default' : 'pointer' }}>
+        {submitting ? 'Entrando...' : 'Entrar'}
+      </button>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
-      </div>
+      <p style={{ color: '#06B6D4', fontSize: '0.9rem', cursor: 'pointer', textAlign: 'center' }} onClick={() => onNavigate('register')}>
+        Não tem conta? Cadastre-se
+      </p>
+      <p style={{ color: '#94A3B8', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'center', marginTop: '8px' }} onClick={() => onNavigate('landing')}>
+        Voltar para a página inicial
+      </p>
     </div>
   );
-}
+};
