@@ -33,12 +33,12 @@ export const FeedView: React.FC = () => {
   const { user, signOut } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [showImageInput, setShowImageInput] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Estado para Modal de Comentários
+  // Modal de Comentários
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -106,27 +106,58 @@ export const FeedView: React.FC = () => {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const handleCreatePost = async () => {
-    if ((!newPost.trim() && !imageUrl.trim()) || !user) return;
+    if ((!newPost.trim() && !selectedFile) || !user) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      let uploadedImageUrl = null;
+
+      // Upload do arquivo para o bucket 'posts'
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('posts')
+          .upload(fileName, selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('posts')
+          .getPublicUrl(fileName);
+
+        uploadedImageUrl = publicUrlData.publicUrl;
+      }
+
+      // Inserir registro na tabela 'posts'
+      const { error: postError } = await supabase
         .from('posts')
         .insert([
-          { 
-            content: newPost.trim(), 
-            image_url: imageUrl.trim() || null, 
-            user_id: user.id 
-          }
+          {
+            content: newPost.trim(),
+            image_url: uploadedImageUrl,
+            user_id: user.id,
+          },
         ]);
 
-      if (error) throw error;
+      if (postError) throw postError;
+
       setNewPost('');
-      setImageUrl('');
-      setShowImageInput(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
       fetchPosts();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao criar post:', err);
+      alert('Erro ao enviar post: ' + (err.message || 'Tente novamente.'));
     } finally {
       setSubmitting(false);
     }
@@ -249,40 +280,38 @@ export const FeedView: React.FC = () => {
           }}
         />
 
-        {/* Input da Imagem (ocultável) */}
-        {showImageInput && (
-          <div style={{ marginBottom: '12px' }}>
-            <input
-              type="text"
-              placeholder="Cole a URL da imagem (ex: https://site.com/foto.jpg)"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              style={{
-                width: '100%',
-                backgroundColor: '#0B0F17',
-                border: '1px solid #1E293B',
-                borderRadius: '10px',
-                padding: '8px 12px',
-                color: '#FFF',
-                outline: 'none',
-                fontSize: '14px',
+        {/* Prévia da Foto selecionada */}
+        {previewUrl && (
+          <div style={{ position: 'relative', marginBottom: '12px' }}>
+            <div style={{ borderRadius: '12px', overflow: 'hidden', maxHeight: '200px' }}>
+              <img src={previewUrl} alt="Prévia da galeria" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <button
+              onClick={() => {
+                setSelectedFile(null);
+                setPreviewUrl(null);
               }}
-            />
-            {imageUrl.trim() && (
-              <div style={{ marginTop: '8px', borderRadius: '10px', overflow: 'hidden', maxHeight: '180px' }}>
-                <img src={imageUrl} alt="Prévia" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            )}
+              style={{
+                marginTop: '6px',
+                backgroundColor: '#EF4444',
+                color: '#FFF',
+                border: 'none',
+                padding: '4px 12px',
+                borderRadius: '12px',
+                fontSize: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              Remover Foto
+            </button>
           </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-          <button
-            onClick={() => setShowImageInput(!showImageInput)}
+          {/* Input de arquivo invisível ativado via label */}
+          <label
             style={{
-              background: 'none',
-              border: 'none',
-              color: showImageInput ? '#818CF8' : '#94A3B8',
+              color: '#818CF8',
               cursor: 'pointer',
               fontSize: '14px',
               display: 'flex',
@@ -290,12 +319,18 @@ export const FeedView: React.FC = () => {
               gap: '6px',
             }}
           >
-            🖼️ {showImageInput ? 'Remover Imagem' : 'Adicionar Foto'}
-          </button>
+            📷 Escolher Foto
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+          </label>
 
           <button
             onClick={handleCreatePost}
-            disabled={submitting || (!newPost.trim() && !imageUrl.trim())}
+            disabled={submitting || (!newPost.trim() && !selectedFile)}
             style={{
               backgroundColor: '#6366F1',
               color: '#FFF',
@@ -304,10 +339,10 @@ export const FeedView: React.FC = () => {
               borderRadius: '20px',
               fontWeight: 'bold',
               cursor: 'pointer',
-              opacity: submitting || (!newPost.trim() && !imageUrl.trim()) ? 0.5 : 1,
+              opacity: submitting || (!newPost.trim() && !selectedFile) ? 0.5 : 1,
             }}
           >
-            {submitting ? 'Publicando...' : 'Publicar'}
+            {submitting ? 'Enviando...' : 'Publicar'}
           </button>
         </div>
       </div>
@@ -340,7 +375,7 @@ export const FeedView: React.FC = () => {
                     justifyContent: 'center',
                     fontWeight: 'bold',
                     marginRight: '12px',
-                    color: '#FFF'
+                    color: '#FFF',
                   }}
                 >
                   {getInitials(post.profiles?.full_name)}
@@ -352,14 +387,14 @@ export const FeedView: React.FC = () => {
               </div>
             </div>
 
-            {/* Conteúdo de Texto */}
+            {/* Conteúdo do Post */}
             {post.content && (
               <div style={{ color: '#E2E8F0', fontSize: '15px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
                 {post.content}
               </div>
             )}
 
-            {/* Imagem do Post */}
+            {/* Imagem embutida */}
             {post.image_url && (
               <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '12px', backgroundColor: '#0B0F17' }}>
                 <img
@@ -370,7 +405,7 @@ export const FeedView: React.FC = () => {
               </div>
             )}
 
-            {/* Ações (Curtir / Comentar) */}
+            {/* Curtir / Comentar */}
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', color: '#94A3B8' }}>
               <button
                 onClick={() => handleToggleLike(post.id, !!post.user_has_liked)}
@@ -435,7 +470,6 @@ export const FeedView: React.FC = () => {
               flexDirection: 'column',
             }}
           >
-            {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, color: '#FFF' }}>Comentários</h3>
               <button
@@ -446,12 +480,10 @@ export const FeedView: React.FC = () => {
               </button>
             </div>
 
-            {/* Post Original Resumido */}
             <div style={{ backgroundColor: '#0B0F17', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontSize: '14px', color: '#CBD5E1' }}>
               <strong>{selectedPost.profiles?.full_name}:</strong> {selectedPost.content}
             </div>
 
-            {/* Lista de Comentários */}
             <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
               {loadingComments ? (
                 <div style={{ color: '#6366F1', textAlign: 'center', padding: '10px' }}>Carregando respostas...</div>
@@ -469,7 +501,6 @@ export const FeedView: React.FC = () => {
               )}
             </div>
 
-            {/* Campo de Novo Comentário */}
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
