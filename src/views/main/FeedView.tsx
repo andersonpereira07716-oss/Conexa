@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { NotificationsView } from './NotificationsView';
 
 interface Post {
   id: string;
@@ -37,6 +38,8 @@ export const FeedView: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Modal de Comentários
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -46,7 +49,22 @@ export const FeedView: React.FC = () => {
 
   useEffect(() => {
     fetchPosts();
+    fetchUnreadNotifications();
   }, [user]);
+
+  const fetchUnreadNotifications = async () => {
+    if (!user) return;
+    try {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
+      setUnreadCount(count || 0);
+    } catch (err) {
+      console.error('Erro ao verificar notificações:', err);
+    }
+  };
 
   const fetchPosts = async () => {
     try {
@@ -120,7 +138,6 @@ export const FeedView: React.FC = () => {
     try {
       let uploadedImageUrl = null;
 
-      // Upload do arquivo para o bucket 'posts'
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
@@ -138,7 +155,6 @@ export const FeedView: React.FC = () => {
         uploadedImageUrl = publicUrlData.publicUrl;
       }
 
-      // Inserir registro na tabela 'posts'
       const { error: postError } = await supabase
         .from('posts')
         .insert([
@@ -163,12 +179,14 @@ export const FeedView: React.FC = () => {
     }
   };
 
-  const handleToggleLike = async (postId: string, currentLiked: boolean) => {
+  const handleToggleLike = async (post: Post) => {
     if (!user) return;
+
+    const currentLiked = !!post.user_has_liked;
 
     setPosts((prev) =>
       prev.map((p) =>
-        p.id === postId
+        p.id === post.id
           ? {
               ...p,
               user_has_liked: !currentLiked,
@@ -183,12 +201,24 @@ export const FeedView: React.FC = () => {
         await supabase
           .from('likes')
           .delete()
-          .eq('post_id', postId)
+          .eq('post_id', post.id)
           .eq('user_id', user.id);
       } else {
         await supabase
           .from('likes')
-          .insert([{ post_id: postId, user_id: user.id }]);
+          .insert([{ post_id: post.id, user_id: user.id }]);
+
+        // Criar notificação se não for o próprio post
+        if (post.user_id !== user.id) {
+          await supabase.from('notifications').insert([
+            {
+              user_id: post.user_id,
+              actor_id: user.id,
+              type: 'like',
+              post_id: post.id,
+            },
+          ]);
+        }
       }
     } catch (err) {
       console.error('Erro ao curtir post:', err);
@@ -229,6 +259,19 @@ export const FeedView: React.FC = () => {
         .insert([{ post_id: selectedPost.id, user_id: user.id, content: newComment.trim() }]);
 
       if (error) throw error;
+
+      // Criar notificação de comentário
+      if (selectedPost.user_id !== user.id) {
+        await supabase.from('notifications').insert([
+          {
+            user_id: selectedPost.user_id,
+            actor_id: user.id,
+            type: 'comment',
+            post_id: selectedPost.id,
+          },
+        ]);
+      }
+
       setNewComment('');
       handleOpenComments(selectedPost);
       fetchPosts();
@@ -242,24 +285,70 @@ export const FeedView: React.FC = () => {
     return name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
+  if (showNotifications) {
+    return (
+      <NotificationsView
+        onBack={() => {
+          setShowNotifications(false);
+          fetchUnreadNotifications();
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1 style={{ color: '#818CF8', fontSize: '24px', fontWeight: 'bold' }}>CONEXA</h1>
-        <button
-          onClick={signOut}
-          style={{
-            backgroundColor: '#1E293B',
-            color: '#94A3B8',
-            border: 'none',
-            padding: '8px 16px',
-            borderRadius: '20px',
-            cursor: 'pointer',
-          }}
-        >
-          Sair
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowNotifications(true)}
+            style={{
+              backgroundColor: '#1E293B',
+              color: '#FFF',
+              border: 'none',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              position: 'relative',
+              fontSize: '14px',
+            }}
+          >
+            🔔 Notificações
+            {unreadCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  backgroundColor: '#EF4444',
+                  color: '#FFF',
+                  borderRadius: '50%',
+                  padding: '2px 6px',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                }}
+              >
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={signOut}
+            style={{
+              backgroundColor: '#1E293B',
+              color: '#94A3B8',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+            }}
+          >
+            Sair
+          </button>
+        </div>
       </div>
 
       {/* Caixa de Novo Post */}
@@ -280,7 +369,6 @@ export const FeedView: React.FC = () => {
           }}
         />
 
-        {/* Prévia da Foto selecionada */}
         {previewUrl && (
           <div style={{ position: 'relative', marginBottom: '12px' }}>
             <div style={{ borderRadius: '12px', overflow: 'hidden', maxHeight: '200px' }}>
@@ -308,7 +396,6 @@ export const FeedView: React.FC = () => {
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-          {/* Input de arquivo invisível ativado via label */}
           <label
             style={{
               color: '#818CF8',
@@ -355,7 +442,6 @@ export const FeedView: React.FC = () => {
       ) : (
         posts.map((post) => (
           <div key={post.id} style={{ backgroundColor: '#131B2E', padding: '16px', borderRadius: '16px', marginBottom: '16px' }}>
-            {/* Header do Autor */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
               {post.profiles?.avatar_url ? (
                 <img
@@ -387,14 +473,12 @@ export const FeedView: React.FC = () => {
               </div>
             </div>
 
-            {/* Conteúdo do Post */}
             {post.content && (
               <div style={{ color: '#E2E8F0', fontSize: '15px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
                 {post.content}
               </div>
             )}
 
-            {/* Imagem embutida */}
             {post.image_url && (
               <div style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '12px', backgroundColor: '#0B0F17' }}>
                 <img
@@ -405,10 +489,9 @@ export const FeedView: React.FC = () => {
               </div>
             )}
 
-            {/* Curtir / Comentar */}
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', color: '#94A3B8' }}>
               <button
-                onClick={() => handleToggleLike(post.id, !!post.user_has_liked)}
+                onClick={() => handleToggleLike(post)}
                 style={{
                   background: 'none',
                   border: 'none',
