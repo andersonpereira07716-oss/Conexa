@@ -6,23 +6,41 @@ interface BottomNavigationProps {
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange }) => {
-  return (
-    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '60px', backgroundColor: '#161F30', borderTop: '1px solid #1E293B', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 100 }}>
-      <button 
-        onClick={() => onTabChange('home')}
-        style={{ background: 'none', border: 'none', color: activeTab === 'home' ? '#6366F1' : '#94A3B8', fontWeight: activeTab === 'home' ? 'bold' : 'normal', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
-      >
-        <span>🏠</span>
-        <span style={{ fontSize: '0.75rem' }}>Feed</span>
-      </button>
+  const tabs = [
+    { id: 'home', label: 'Feed', icon: '🏠' },
+    { id: 'profile', label: 'Perfil', icon: '👤' },
+  ];
 
-      <button 
-        onClick={() => onTabChange('profile')}
-        style={{ background: 'none', border: 'none', color: activeTab === 'profile' ? '#6366F1' : '#94A3B8', fontWeight: activeTab === 'profile' ? 'bold' : 'normal', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
-      >
-        <span>👤</span>
-        <span style={{ fontSize: '0.75rem' }}>Perfil</span>
-      </button>
+  return (
+    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(22,31,48,0.92)', backdropFilter: 'blur(10px)', borderTop: '1px solid #232C3D', display: 'flex', justifyContent: 'center', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', zIndex: 100 }}>
+      <div style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '400px', justifyContent: 'space-around' }}>
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              style={{
+                background: isActive ? 'rgba(99,102,241,0.15)' : 'none',
+                border: 'none',
+                borderRadius: '14px',
+                color: isActive ? '#818CF8' : '#64748B',
+                fontWeight: isActive ? 700 : 500,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+                padding: '8px 22px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span style={{ fontSize: '1.2rem' }}>{tab.icon}</span>
+              <span style={{ fontSize: '0.68rem' }}>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 };
