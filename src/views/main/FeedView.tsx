@@ -17,6 +17,7 @@ interface Post {
   likes_count?: number;
   comments_count?: number;
   user_has_liked?: boolean;
+  is_following_author?: boolean;
 }
 
 interface Comment {
@@ -40,6 +41,7 @@ export const FeedView: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
 
   // Modal de Comentários
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -50,7 +52,7 @@ export const FeedView: React.FC = () => {
   useEffect(() => {
     fetchPosts();
     fetchUnreadNotifications();
-  }, [user]);
+  }, [user, activeTab]);
 
   const fetchUnreadNotifications = async () => {
     if (!user) return;
@@ -69,7 +71,17 @@ export const FeedView: React.FC = () => {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      let followingUserIds: string[] = [];
+      if (user) {
+        const { data: followData } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id);
+        followingUserIds = (followData || []).map((f) => f.following_id);
+      }
+
+      let query = supabase
         .from('posts')
         .select(`
           id,
@@ -80,6 +92,17 @@ export const FeedView: React.FC = () => {
           profiles (full_name, username, avatar_url)
         `)
         .order('created_at', { ascending: false });
+
+      if (activeTab === 'following') {
+        if (followingUserIds.length === 0) {
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+        query = query.in('user_id', followingUserIds);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -107,11 +130,14 @@ export const FeedView: React.FC = () => {
               userHasLiked = !!likeData;
             }
 
+            const isFollowingAuthor = followingUserIds.includes(post.user_id);
+
             return {
               ...post,
               likes_count: likesCount || 0,
               comments_count: commentsCount || 0,
               user_has_liked: userHasLiked,
+              is_following_author: isFollowingAuthor,
             };
           })
         );
@@ -121,6 +147,41 @@ export const FeedView: React.FC = () => {
       console.error('Erro ao carregar posts:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleFollow = async (authorId: string, isCurrentlyFollowing?: boolean) => {
+    if (!user || user.id === authorId) return;
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.user_id === authorId ? { ...p, is_following_author: !isCurrentlyFollowing } : p
+      )
+    );
+
+    try {
+      if (isCurrentlyFollowing) {
+        await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', authorId);
+      } else {
+        await supabase
+          .from('follows')
+          .insert([{ follower_id: user.id, following_id: authorId }]);
+
+        await supabase.from('notifications').insert([
+          {
+            user_id: authorId,
+            actor_id: user.id,
+            type: 'follow',
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error('Erro ao alternar conexão:', err);
+      fetchPosts();
     }
   };
 
@@ -208,7 +269,6 @@ export const FeedView: React.FC = () => {
           .from('likes')
           .insert([{ post_id: post.id, user_id: user.id }]);
 
-        // Criar notificação se não for o próprio post
         if (post.user_id !== user.id) {
           await supabase.from('notifications').insert([
             {
@@ -260,7 +320,6 @@ export const FeedView: React.FC = () => {
 
       if (error) throw error;
 
-      // Criar notificação de comentário
       if (selectedPost.user_id !== user.id) {
         await supabase.from('notifications').insert([
           {
@@ -299,7 +358,7 @@ export const FeedView: React.FC = () => {
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ color: '#818CF8', fontSize: '24px', fontWeight: 'bold' }}>CONEXA</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
@@ -351,6 +410,42 @@ export const FeedView: React.FC = () => {
         </div>
       </div>
 
+      {/* Abas Para você / Seguindo */}
+      <div style={{ display: 'flex', borderBottom: '1px solid #1E293B', marginBottom: '20px' }}>
+        <button
+          onClick={() => setActiveTab('for_you')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'for_you' ? '3px solid #6366F1' : 'none',
+            color: activeTab === 'for_you' ? '#818CF8' : '#94A3B8',
+            fontWeight: activeTab === 'for_you' ? 'bold' : 'normal',
+            cursor: 'pointer',
+            fontSize: '15px',
+          }}
+        >
+          Para você
+        </button>
+        <button
+          onClick={() => setActiveTab('following')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderBottom: activeTab === 'following' ? '3px solid #6366F1' : 'none',
+            color: activeTab === 'following' ? '#818CF8' : '#94A3B8',
+            fontWeight: activeTab === 'following' ? 'bold' : 'normal',
+            cursor: 'pointer',
+            fontSize: '15px',
+          }}
+        >
+          Seguindo
+        </button>
+      </div>
+
       {/* Caixa de Novo Post */}
       <div style={{ backgroundColor: '#131B2E', padding: '16px', borderRadius: '16px', marginBottom: '20px' }}>
         <textarea
@@ -372,7 +467,7 @@ export const FeedView: React.FC = () => {
         {previewUrl && (
           <div style={{ position: 'relative', marginBottom: '12px' }}>
             <div style={{ borderRadius: '12px', overflow: 'hidden', maxHeight: '200px' }}>
-              <img src={previewUrl} alt="Prévia da galeria" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={previewUrl} alt="Prévia" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <button
               onClick={() => {
@@ -407,12 +502,7 @@ export const FeedView: React.FC = () => {
             }}
           >
             📷 Escolher Foto
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
+            <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
           </label>
 
           <button
@@ -438,39 +528,64 @@ export const FeedView: React.FC = () => {
       {loading ? (
         <div style={{ textAlign: 'center', color: '#6366F1', padding: '20px' }}>Carregando feed...</div>
       ) : posts.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#94A3B8', padding: '20px' }}>Nenhuma publicação encontrada.</div>
+        <div style={{ textAlign: 'center', color: '#94A3B8', padding: '20px' }}>
+          {activeTab === 'following'
+            ? 'Você ainda não segue ninguém ou quem você segue não publicou nada.'
+            : 'Nenhuma publicação encontrada.'}
+        </div>
       ) : (
         posts.map((post) => (
           <div key={post.id} style={{ backgroundColor: '#131B2E', padding: '16px', borderRadius: '16px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-              {post.profiles?.avatar_url ? (
-                <img
-                  src={post.profiles.avatar_url}
-                  alt="Avatar"
-                  style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', marginRight: '12px' }}
-                />
-              ) : (
-                <div
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {post.profiles?.avatar_url ? (
+                  <img
+                    src={post.profiles.avatar_url}
+                    alt="Avatar"
+                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', marginRight: '12px' }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: '#6366F1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      marginRight: '12px',
+                      color: '#FFF',
+                    }}
+                  >
+                    {getInitials(post.profiles?.full_name)}
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontWeight: 'bold', color: '#FFF' }}>{post.profiles?.full_name || 'Usuário'}</div>
+                  <div style={{ fontSize: '12px', color: '#94A3B8' }}>@{post.profiles?.username || 'usuario'}</div>
+                </div>
+              </div>
+
+              {/* Botão Seguir/Seguindo */}
+              {user && user.id !== post.user_id && (
+                <button
+                  onClick={() => handleToggleFollow(post.user_id, post.is_following_author)}
                   style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    backgroundColor: '#6366F1',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    backgroundColor: post.is_following_author ? '#1E293B' : '#6366F1',
+                    color: post.is_following_author ? '#94A3B8' : '#FFF',
+                    border: 'none',
+                    padding: '6px 14px',
+                    borderRadius: '16px',
+                    fontSize: '12px',
                     fontWeight: 'bold',
-                    marginRight: '12px',
-                    color: '#FFF',
+                    cursor: 'pointer',
                   }}
                 >
-                  {getInitials(post.profiles?.full_name)}
-                </div>
+                  {post.is_following_author ? 'Seguindo' : '+ Seguir'}
+                </button>
               )}
-              <div>
-                <div style={{ fontWeight: 'bold', color: '#FFF' }}>{post.profiles?.full_name || 'Usuário'}</div>
-                <div style={{ fontSize: '12px', color: '#94A3B8' }}>@{post.profiles?.username || 'usuario'}</div>
-              </div>
             </div>
 
             {post.content && (

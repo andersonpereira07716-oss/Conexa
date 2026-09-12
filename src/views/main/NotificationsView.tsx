@@ -49,7 +49,6 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onBack }) 
       if (error) throw error;
       setNotifications((data as any) || []);
 
-      // Marcar notificações como lidas
       await supabase
         .from('notifications')
         .update({ read: true })
@@ -65,6 +64,19 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onBack }) 
   const getInitials = (name?: string) => {
     if (!name) return 'U';
     return name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
+  const getNotificationText = (type: string) => {
+    switch (type) {
+      case 'like':
+        return 'curtiu a sua publicação.';
+      case 'comment':
+        return 'comentou na sua publicação.';
+      case 'follow':
+        return 'começou a seguir você.';
+      default:
+        return 'interagiu com você.';
+    }
   };
 
   return (
@@ -133,8 +145,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onBack }) 
 
             <div style={{ flex: 1 }}>
               <div style={{ color: '#FFF', fontSize: '14px' }}>
-                <strong>{item.actor?.full_name || 'Usuário'}</strong>{' '}
-                {item.type === 'like' ? 'curtiu a sua publicação.' : 'comentou na sua publicação.'}
+                <strong>{item.actor?.full_name || 'Usuário'}</strong> {getNotificationText(item.type)}
               </div>
               <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '4px' }}>
                 {new Date(item.created_at).toLocaleDateString('pt-BR', {
