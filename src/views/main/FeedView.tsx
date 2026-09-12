@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { NotificationsView } from './NotificationsView';
 import { ExploreView } from './ExploreView';
 import { ProfileEditView } from './ProfileEditView';
+import { TrendingTopicsView } from './TrendingTopicsView';
 
 interface Post {
   id: string;
@@ -47,6 +48,7 @@ export const FeedView: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showExplore, setShowExplore] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showTrending, setShowTrending] = useState(false);
   const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
 
   // Estados de Edição de Post
@@ -254,7 +256,6 @@ export const FeedView: React.FC = () => {
     }
   };
 
-  // --- Funções de Edição e Exclusão de Posts ---
   const handleStartEditPost = (post: Post) => {
     setEditingPostId(post.id);
     setEditingPostContent(post.content);
@@ -336,7 +337,6 @@ export const FeedView: React.FC = () => {
     }
   };
 
-  // --- Funções de Comentários ---
   const handleOpenComments = async (post: Post) => {
     setSelectedPost(post);
     setLoadingComments(true);
@@ -459,22 +459,47 @@ export const FeedView: React.FC = () => {
     );
   }
 
+  if (showTrending) {
+    return (
+      <TrendingTopicsView
+        onBack={() => {
+          setShowTrending(false);
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '16px' }}>
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ color: '#818CF8', fontSize: '24px', fontWeight: 'bold' }}>CONEXA</h1>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowTrending(true)}
+            style={{
+              backgroundColor: '#1E293B',
+              color: '#FFF',
+              border: 'none',
+              padding: '8px 10px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '13px',
+            }}
+          >
+            🔥 Trends
+          </button>
+
           <button
             onClick={() => setShowExplore(true)}
             style={{
               backgroundColor: '#1E293B',
               color: '#FFF',
               border: 'none',
-              padding: '8px 12px',
+              padding: '8px 10px',
               borderRadius: '20px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '13px',
             }}
           >
             🔍 Busca
@@ -486,10 +511,10 @@ export const FeedView: React.FC = () => {
               backgroundColor: '#1E293B',
               color: '#FFF',
               border: 'none',
-              padding: '8px 12px',
+              padding: '8px 10px',
               borderRadius: '20px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '13px',
             }}
           >
             👤 Perfil
@@ -501,11 +526,11 @@ export const FeedView: React.FC = () => {
               backgroundColor: '#1E293B',
               color: '#FFF',
               border: 'none',
-              padding: '8px 12px',
+              padding: '8px 10px',
               borderRadius: '20px',
               cursor: 'pointer',
               position: 'relative',
-              fontSize: '14px',
+              fontSize: '13px',
             }}
           >
             🔔
@@ -534,10 +559,10 @@ export const FeedView: React.FC = () => {
               backgroundColor: '#1E293B',
               color: '#94A3B8',
               border: 'none',
-              padding: '8px 14px',
+              padding: '8px 12px',
               borderRadius: '20px',
               cursor: 'pointer',
-              fontSize: '14px',
+              fontSize: '13px',
             }}
           >
             Sair
@@ -584,7 +609,7 @@ export const FeedView: React.FC = () => {
       {/* Caixa de Novo Post */}
       <div style={{ backgroundColor: '#131B2E', padding: '16px', borderRadius: '16px', marginBottom: '20px' }}>
         <textarea
-          placeholder="O que está acontecendo?"
+          placeholder="O que está acontecendo? Use #hashtags!"
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
           style={{
