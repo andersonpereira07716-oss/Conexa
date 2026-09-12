@@ -23,12 +23,7 @@ export const RegisterView: React.FC<{ onNavigate: (page: string) => void }> = ({
     setSubmitting(true);
     try {
       const data = await signUp(email.trim(), password, fullName.trim());
-
-      if (data?.session) {
-        // Confirmação de e-mail desativada: já entra logado.
-        // O AppRoutes redireciona sozinho pra home.
-      } else {
-        // Confirmação de e-mail ativada: precisa checar a caixa de entrada.
+      if (!data?.session) {
         setInfo('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
       }
     } catch (err: any) {
@@ -55,36 +50,11 @@ export const RegisterView: React.FC<{ onNavigate: (page: string) => void }> = ({
       )}
 
       <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <input
-          type="text"
-          placeholder="Nome completo"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
-          style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }}
-        />
-        <input
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }}
-        />
-        <input
-          type="password"
-          placeholder="Senha (mín. 6 caracteres)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }}
-        />
+        <input type="text" placeholder="Nome completo" value={fullName} onChange={(e) => setFullName(e.target.value)} required style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }} />
+        <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }} />
+        <input type="password" placeholder="Senha (mín. 6 caracteres)" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ padding: '14px', borderRadius: '10px', backgroundColor: '#161F30', border: '1px solid #1E293B', color: '#FFF', width: '100%', boxSizing: 'border-box' }} />
 
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{ padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: submitting ? '#334155' : '#6366F1', color: '#FFF', fontWeight: 'bold', marginTop: '12px', cursor: submitting ? 'default' : 'pointer' }}
-        >
+        <button type="submit" disabled={submitting} style={{ padding: '14px', borderRadius: '12px', border: 'none', backgroundColor: submitting ? '#334155' : '#6366F1', color: '#FFF', fontWeight: 'bold', marginTop: '12px', cursor: submitting ? 'default' : 'pointer' }}>
           {submitting ? 'Cadastrando...' : 'Cadastrar'}
         </button>
       </form>

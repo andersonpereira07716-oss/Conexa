@@ -1,81 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from './services/supabase';
-import { FeedView } from './views/main/FeedView';
-import { ProfileView } from './views/main/ProfileView';
+import React from 'react';
+import { AppRoutes } from './navigation/AppRoutes';
+import { AuthProvider } from './context/AuthContext';
 
-export const App: React.FC = () => {
-  const [session, setSession] = useState<any>(null);
-  const [currentTab, setCurrentTab] = useState<'feed' | 'profile'>('feed');
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '24px', color: '#FF5555', backgroundColor: '#0B0F17', height: '100vh', fontFamily: 'sans-serif' }}>
+          <h2>⚠️ Erro em um componente da interface:</h2>
+          <p style={{ color: '#94A3B8' }}>Identificamos a origem do problema no projeto:</p>
+          <pre style={{ backgroundColor: '#1A1D24', padding: '12px', borderRadius: '8px', overflow: 'auto', whiteSpace: 'pre-wrap', color: '#F8FAFC' }}>
+            {this.state.error?.toString()}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
-    return () => subscription.unsubscribe();
-  }, []);
-
+export function App() {
   return (
-    <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      {currentTab === 'feed' ? <FeedView /> : <ProfileView />}
-
-      {/* Navegação Inferior */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: '#161F30',
-        borderTop: '1px solid #1E293B',
-        display: 'flex',
-        justify: 'space-around',
-        padding: '12px 0',
-        zIndex: 1000
-      }}>
-        <button
-          onClick={() => setCurrentTab('feed')}
-          style={{
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: currentTab === 'feed' ? '#6366F1' : '#94A3B8',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px'
-          }}
-        >
-          <span>🏠</span>
-          <span>Feed</span>
-        </button>
-
-        <button
-          onClick={() => setCurrentTab('profile')}
-          style={{
-            backgroundColor: 'transparent',
-            border: 'none',
-            color: currentTab === 'profile' ? '#6366F1' : '#94A3B8',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px'
-          }}
-        >
-          <span>👤</span>
-          <span>Perfil</span>
-        </button>
-      </div>
-    </div>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ErrorBoundary>
   );
-};
+}
 
 export default App;
