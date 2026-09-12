@@ -18,14 +18,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Busca a sessão atual
+    // 1. Obter sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch((err) => {
+      console.error("Erro ao obter sessão:", err);
+      setLoading(false);
     });
 
-    // Escuta mudanças no estado de autenticação
+    // 2. Ouvir alterações de autenticação em tempo real
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -39,7 +42,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data, error } = await supabase.auth.signUp({
       email,
       password: pass,
-      options: { data: { full_name: name } }
+      options: { 
+        data: { 
+          full_name: name,
+          name: name
+        } 
+      }
     });
     if (error) throw error;
     return data;
@@ -55,9 +63,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+    } finally {
+      setUser(null);
+      setSession(null);
+    }
   };
 
   return (
