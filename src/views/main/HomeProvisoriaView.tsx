@@ -120,6 +120,7 @@ export const HomeProvisoriaView: React.FC = () => {
     const authorName = (user.user_metadata?.full_name as string) || 'Você';
     const authorHandle = '@' + (user.email?.split('@')[0] || 'usuario');
     const { data, error } = await supabase.from('comments').insert([{ post_id: postId, user_id: user.id, author_name: authorName, author_handle: authorHandle, content: text }]).select();
+    if (error) { alert('Erro ao comentar: ' + error.message); console.error('Erro comentario:', error); }
     if (!error && data) {
       setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), data[0]] }));
       setCommentCounts((prev) => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }));
