@@ -47,11 +47,19 @@ export const FeedView: React.FC = () => {
   const [showExplore, setShowExplore] = useState(false);
   const [activeTab, setActiveTab] = useState<'for_you' | 'following'>('for_you');
 
+  // Estados de Edição de Post
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editingPostContent, setEditingPostContent] = useState('');
+
   // Modal de Comentários
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
+
+  // Estados de Edição de Comentário
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
 
   useEffect(() => {
     fetchPosts();
@@ -244,6 +252,42 @@ export const FeedView: React.FC = () => {
     }
   };
 
+  // --- Funções de Edição e Exclusão de Posts ---
+  const handleStartEditPost = (post: Post) => {
+    setEditingPostId(post.id);
+    setEditingPostContent(post.content);
+  };
+
+  const handleSaveEditPost = async (postId: string) => {
+    if (!editingPostContent.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({ content: editingPostContent.trim() })
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      setEditingPostId(null);
+      fetchPosts();
+    } catch (err) {
+      console.error('Erro ao editar publicação:', err);
+      alert('Não foi possível salvar a edição.');
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm('Tem certeza de que deseja excluir esta publicação?')) return;
+    try {
+      const { error } = await supabase.from('posts').delete().eq('id', postId);
+      if (error) throw error;
+      fetchPosts();
+    } catch (err) {
+      console.error('Erro ao excluir publicação:', err);
+      alert('Erro ao excluir publicação.');
+    }
+  };
+
   const handleToggleLike = async (post: Post) => {
     if (!user) return;
 
@@ -290,6 +334,7 @@ export const FeedView: React.FC = () => {
     }
   };
 
+  // --- Funções de Comentários ---
   const handleOpenComments = async (post: Post) => {
     setSelectedPost(post);
     setLoadingComments(true);
@@ -340,6 +385,37 @@ export const FeedView: React.FC = () => {
       fetchPosts();
     } catch (err) {
       console.error('Erro ao adicionar comentário:', err);
+    }
+  };
+
+  const handleSaveEditComment = async (commentId: string) => {
+    if (!editingCommentContent.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .update({ content: editingCommentContent.trim() })
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      setEditingCommentId(null);
+      if (selectedPost) handleOpenComments(selectedPost);
+    } catch (err) {
+      console.error('Erro ao editar comentário:', err);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm('Excluir este comentário?')) return;
+    try {
+      const { error } = await supabase.from('comments').delete().eq('id', commentId);
+      if (error) throw error;
+      if (selectedPost) {
+        handleOpenComments(selectedPost);
+        fetchPosts();
+      }
+    } catch (err) {
+      console.error('Erro ao excluir comentário:', err);
     }
   };
 
@@ -599,30 +675,98 @@ export const FeedView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Botão Seguir/Seguindo */}
-              {user && user.id !== post.user_id && (
-                <button
-                  onClick={() => handleToggleFollow(post.user_id, post.is_following_author)}
-                  style={{
-                    backgroundColor: post.is_following_author ? '#1E293B' : '#6366F1',
-                    color: post.is_following_author ? '#94A3B8' : '#FFF',
-                    border: 'none',
-                    padding: '6px 14px',
-                    borderRadius: '16px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {post.is_following_author ? 'Seguindo' : '+ Seguir'}
-                </button>
+              {/* Ações do autor ou Botão Seguir */}
+              {user && user.id === post.user_id ? (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => handleStartEditPost(post)}
+                    style={{ background: 'none', border: 'none', color: '#818CF8', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    onClick={() => handleDeletePost(post.id)}
+                    style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    🗑️ Excluir
+                  </button>
+                </div>
+              ) : (
+                user && (
+                  <button
+                    onClick={() => handleToggleFollow(post.user_id, post.is_following_author)}
+                    style={{
+                      backgroundColor: post.is_following_author ? '#1E293B' : '#6366F1',
+                      color: post.is_following_author ? '#94A3B8' : '#FFF',
+                      border: 'none',
+                      padding: '6px 14px',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {post.is_following_author ? 'Seguindo' : '+ Seguir'}
+                  </button>
+                )
               )}
             </div>
 
-            {post.content && (
-              <div style={{ color: '#E2E8F0', fontSize: '15px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
-                {post.content}
+            {/* Conteúdo ou formulário de edição */}
+            {editingPostId === post.id ? (
+              <div style={{ marginBottom: '12px' }}>
+                <textarea
+                  value={editingPostContent}
+                  onChange={(e) => setEditingPostContent(e.target.value)}
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#0B0F17',
+                    border: '1px solid #6366F1',
+                    borderRadius: '8px',
+                    padding: '8px',
+                    color: '#FFF',
+                    outline: 'none',
+                    minHeight: '60px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  <button
+                    onClick={() => handleSaveEditPost(post.id)}
+                    style={{
+                      backgroundColor: '#6366F1',
+                      color: '#FFF',
+                      border: 'none',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => setEditingPostId(null)}
+                    style={{
+                      backgroundColor: '#1E293B',
+                      color: '#94A3B8',
+                      border: 'none',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
+            ) : (
+              post.content && (
+                <div style={{ color: '#E2E8F0', fontSize: '15px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>
+                  {post.content}
+                </div>
+              )
             )}
 
             {post.image_url && (
@@ -721,10 +865,67 @@ export const FeedView: React.FC = () => {
               ) : (
                 comments.map((c) => (
                   <div key={c.id} style={{ marginBottom: '12px', borderBottom: '1px solid #1E293B', paddingBottom: '8px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#818CF8' }}>
-                      {c.profiles?.full_name || 'Usuário'}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#818CF8' }}>
+                        {c.profiles?.full_name || 'Usuário'}
+                      </div>
+                      {user && user.id === c.user_id && (
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            onClick={() => {
+                              setEditingCommentId(c.id);
+                              setEditingCommentContent(c.content);
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#818CF8', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteComment(c.id)}
+                            style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ fontSize: '14px', color: '#E2E8F0', marginTop: '2px' }}>{c.content}</div>
+
+                    {editingCommentId === c.id ? (
+                      <div style={{ marginTop: '6px' }}>
+                        <input
+                          type="text"
+                          value={editingCommentContent}
+                          onChange={(e) => setEditingCommentContent(e.target.value)}
+                          style={{
+                            width: '100%',
+                            backgroundColor: '#0B0F17',
+                            border: '1px solid #6366F1',
+                            borderRadius: '6px',
+                            padding: '6px',
+                            color: '#FFF',
+                            outline: 'none',
+                            fontSize: '13px',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                          <button
+                            onClick={() => handleSaveEditComment(c.id)}
+                            style={{ backgroundColor: '#6366F1', color: '#FFF', border: 'none', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            Salvar
+                          </button>
+                          <button
+                            onClick={() => setEditingCommentId(null)}
+                            style={{ backgroundColor: '#1E293B', color: '#94A3B8', border: 'none', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', cursor: 'pointer' }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '14px', color: '#E2E8F0', marginTop: '2px' }}>{c.content}</div>
+                    )}
                   </div>
                 ))
               )}
