@@ -35,6 +35,9 @@ export const HomeProvisoriaView: React.FC = () => {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   const [newPost, setNewPost] = useState('');
+  const [newPostImage, setNewPostImage] = useState<File | null>(null);
+  const [newPostImagePreview, setNewPostImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
@@ -97,17 +100,43 @@ export const HomeProvisoriaView: React.FC = () => {
     fetchMyProfile();
   }, [user]);
 
+  const handleSelectImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNewPostImage(file);
+    setNewPostImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    setNewPostImage(null);
+    setNewPostImagePreview(null);
+  };
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.trim() || !user) return;
+    if ((!newPost.trim() && !newPostImage) || !user) return;
     const authorName = (user.user_metadata?.full_name as string) || 'Você';
     const authorHandle = '@' + (user.email?.split('@')[0] || 'usuario');
+
     try {
-      const { data, error } = await supabase.from('posts').insert([{ content: newPost, user_id: user.id, author_name: authorName, author_handle: authorHandle }]).select();
+      let imageUrl: string | null = null;
+      if (newPostImage) {
+        setUploadingImage(true);
+        const ext = newPostImage.name.split('.').pop();
+        const path = `${user.id}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from('posts').upload(path, newPostImage);
+        setUploadingImage(false);
+        if (uploadError) { alert('Erro ao enviar imagem: ' + uploadError.message); return; }
+        const { data: publicUrlData } = supabase.storage.from('posts').getPublicUrl(path);
+        imageUrl = publicUrlData.publicUrl;
+      }
+
+      const { data, error } = await supabase.from('posts').insert([{ content: newPost, user_id: user.id, author_name: authorName, author_handle: authorHandle, image_url: imageUrl }]).select();
       if (error) alert('Erro ao publicar: ' + error.message);
-      else if (data) { setPosts([data[0], ...posts]); setNewPost(''); }
+      else if (data) { setPosts([data[0], ...posts]); setNewPost(''); handleRemoveImage(); }
     } catch (err) {
       console.error('Erro na gravação do post:', err);
+      setUploadingImage(false);
     }
   };
 
@@ -272,8 +301,8 @@ export const HomeProvisoriaView: React.FC = () => {
                     <p style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center' }}>Nenhuma notificação ainda.</p>
                   ) : (
                     notifications.map((n) => (
-                      <div key={n.id} onClick={() => { setNotifOpen(false); setViewingUserId(n.actor_id); }} style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: '0.8rem', cursor: 'pointer', backgroundColor: n.read ? 'transparent' : '#1B2436' }}>
-                        <p style={{ margin: 0, color: 'var(--text-body)' }}>{notifText(n)}</p>
+                      <div key={n.id} onClick={() => { setNotifOpen(false); setViewingUserId(n.actor_id); }} style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', fontSize: '0.8rem', cursor: 'pointer', backgroundColor: n.read ? 'transparent' : 'rgba(99,102,241,0.08)' }}>
+                        <p style={{ margin: 0, color: 'var(--text)' }}>{notifText(n)}</p>
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{timeAgo(n.created_at)}</span>
                       </div>
                     ))
@@ -286,9 +315,21 @@ export const HomeProvisoriaView: React.FC = () => {
         </header>
 
         <form onSubmit={handleCreatePost} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px', padding: '16px', marginBottom: '24px', boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}>
-          <textarea placeholder="O que está acontecendo?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={2} style={{ width: '100%', backgroundColor: 'transparent', border: 'none', color: '#FFF', fontSize: '0.95rem', resize: 'none', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <button type="submit" disabled={!newPost.trim()} style={{ backgroundColor: newPost.trim() ? '#6366F1' : '#334155', color: '#FFF', border: 'none', padding: '9px 20px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem', cursor: newPost.trim() ? 'pointer' : 'default' }}>Publicar</button>
+          <textarea placeholder="O que está acontecendo?" value={newPost} onChange={(e) => setNewPost(e.target.value)} rows={2} style={{ width: '100%', backgroundColor: 'transparent', border: 'none', color: 'var(--text)', fontSize: '0.95rem', resize: 'none', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' }} />
+          {newPostImagePreview && (
+            <div style={{ position: 'relative', marginTop: '10px', display: 'inline-block' }}>
+              <img src={newPostImagePreview} alt="preview" style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '12px', display: 'block' }} />
+              <button type="button" onClick={handleRemoveImage} style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#FFF', borderRadius: '50%', width: '26px', height: '26px', cursor: 'pointer', fontSize: '0.9rem' }}>✕</button>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+            <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '1.2rem' }}>
+              🖼️
+              <input type="file" accept="image/*" onChange={handleSelectImage} style={{ display: 'none' }} />
+            </label>
+            <button type="submit" disabled={(!newPost.trim() && !newPostImage) || uploadingImage} style={{ backgroundColor: (newPost.trim() || newPostImage) && !uploadingImage ? '#6366F1' : '#334155', color: '#FFF', border: 'none', padding: '9px 20px', borderRadius: '20px', fontWeight: 700, fontSize: '0.85rem', cursor: (newPost.trim() || newPostImage) && !uploadingImage ? 'pointer' : 'default' }}>
+              {uploadingImage ? 'Enviando...' : 'Publicar'}
+            </button>
           </div>
         </form>
 
@@ -312,7 +353,7 @@ export const HomeProvisoriaView: React.FC = () => {
                       {isOwnPost && myAvatarUrl ? (
                         <img src={myAvatarUrl} alt="avatar" style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
                       ) : (
-                        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: avatarColor(post.author_handle || post.id), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: 'var(--bg)' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: avatarColor(post.author_handle || post.id), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: '#0B0F17' }}>
                           {initials}
                         </div>
                       )}
@@ -335,7 +376,12 @@ export const HomeProvisoriaView: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <p style={{ margin: '0 0 14px 0', fontSize: '0.92rem', color: 'var(--text-body)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{post.content}</p>
+                  {post.content && (
+                    <p style={{ margin: '0 0 14px 0', fontSize: '0.92rem', color: 'var(--text-body)', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>{post.content}</p>
+                  )}
+                  {post.image_url && (
+                    <img src={post.image_url} alt="post" style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', borderRadius: '14px', marginBottom: '14px', display: 'block' }} />
+                  )}
                   <div style={{ display: 'flex', gap: '22px', fontSize: '0.85rem', color: 'var(--text-secondary)', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
                     <button onClick={() => handleLike(post)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
                       ❤️ {post.likes_count || 0}
@@ -354,7 +400,7 @@ export const HomeProvisoriaView: React.FC = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
                           {(comments[post.id] || []).map((c: any) => (
                             <div key={c.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: avatarColor(c.author_handle || c.id), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700, color: 'var(--bg)' }}>
+                              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: avatarColor(c.author_handle || c.id), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700, color: '#0B0F17' }}>
                                 {(c.author_name || 'U').substring(0, 2).toUpperCase()}
                               </div>
                               <div style={{ backgroundColor: 'var(--surface-alt)', borderRadius: '12px', padding: '8px 12px', flex: 1 }}>
@@ -379,7 +425,7 @@ export const HomeProvisoriaView: React.FC = () => {
                           onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAddComment(post); }}
                           placeholder="Escreva um comentário..."
-                          style={{ flex: 1, backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', borderRadius: '14px', padding: '8px 12px', color: '#FFF', fontSize: '0.82rem', outline: 'none' }}
+                          style={{ flex: 1, backgroundColor: 'var(--surface-alt)', border: '1px solid var(--border)', borderRadius: '14px', padding: '8px 12px', color: 'var(--text)', fontSize: '0.82rem', outline: 'none' }}
                         />
                         <button
                           onClick={() => handleAddComment(post)}
