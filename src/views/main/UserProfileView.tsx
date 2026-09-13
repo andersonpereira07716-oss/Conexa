@@ -132,7 +132,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ userId, onBack
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
+      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
         Carregando perfil...
       </div>
     );
@@ -141,7 +141,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ userId, onBack
   const isSelf = currentUser?.id === userId;
 
   return (
-    <div style={{ padding: '20px', paddingBottom: '80px', color: '#F8FAFC', maxWidth: '600px', margin: '0 auto', boxSizing: 'border-box' }}>
+    <div style={{ padding: '20px', paddingBottom: '80px', color: 'var(--text)', maxWidth: '600px', margin: '0 auto', boxSizing: 'border-box' }}>
       
       {/* Botão Voltar */}
       <button
@@ -163,7 +163,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ userId, onBack
       </button>
 
       {/* Cartão de Perfil */}
-      <div style={{ backgroundColor: '#161F30', border: '1px solid #1E293B', borderRadius: '20px', padding: '24px', textAlign: 'center', marginBottom: '24px' }}>
+      <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px', textAlign: 'center', marginBottom: '24px' }}>
         <div style={{
           width: '80px',
           height: '80px',
@@ -184,19 +184,19 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ userId, onBack
         <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 4px 0' }}>{profile?.full_name}</h2>
         <p style={{ fontSize: '0.85rem', color: '#38BDF8', margin: '0 0 12px 0' }}>@{profile?.username}</p>
         
-        <p style={{ fontSize: '0.9rem', color: '#CBD5E1', margin: '0 0 16px 0', lineHeight: '1.4' }}>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-body)', margin: '0 0 16px 0', lineHeight: '1.4' }}>
           {profile?.bio}
         </p>
 
         {/* Contador de Seguidores */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '20px', borderTop: '1px solid #1E293B', borderBottom: '1px solid #1E293B', padding: '12px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '20px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: '12px 0' }}>
           <div>
-            <strong style={{ fontSize: '1.1rem', color: '#F8FAFC', display: 'block' }}>{followersCount}</strong>
-            <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguidores</span>
+            <strong style={{ fontSize: '1.1rem', color: 'var(--text)', display: 'block' }}>{followersCount}</strong>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Seguidores</span>
           </div>
           <div>
-            <strong style={{ fontSize: '1.1rem', color: '#F8FAFC', display: 'block' }}>{followingCount}</strong>
-            <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguindo</span>
+            <strong style={{ fontSize: '1.1rem', color: 'var(--text)', display: 'block' }}>{followingCount}</strong>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Seguindo</span>
           </div>
         </div>
 
@@ -209,7 +209,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ userId, onBack
               width: '100%',
               backgroundColor: isFollowing ? 'transparent' : '#6366F1',
               border: isFollowing ? '1px solid #475569' : 'none',
-              color: isFollowing ? '#94A3B8' : '#FFF',
+              color: isFollowing ? 'var(--text-secondary)' : '#FFF',
               padding: '10px 20px',
               borderRadius: '24px',
               fontWeight: 'bold',
@@ -223,19 +223,19 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ userId, onBack
       </div>
 
       {/* Lista de Publicações do Usuário */}
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '16px', color: '#CBD5E1' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '16px', color: 'var(--text-body)' }}>
         Publicações
       </h3>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {userPosts.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#94A3B8', fontSize: '0.85rem', margin: '20px 0' }}>
+          <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '20px 0' }}>
             Nenhuma publicação feita ainda.
           </p>
         ) : (
           userPosts.map((post) => (
-            <div key={post.id} style={{ backgroundColor: '#161F30', border: '1px solid #1E293B', borderRadius: '16px', padding: '16px' }}>
-              <p style={{ fontSize: '0.9rem', color: '#E2E8F0', margin: '0 0 12px 0', lineHeight: '1.4' }}>{post.content}</p>
+            <div key={post.id} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-body)', margin: '0 0 12px 0', lineHeight: '1.4' }}>{post.content}</p>
 
               {post.image_url && (
                 <div style={{ marginBottom: '12px', borderRadius: '12px', overflow: 'hidden' }}>
@@ -243,7 +243,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({ userId, onBack
                 </div>
               )}
 
-              <div style={{ color: '#94A3B8', fontSize: '0.8rem' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                 ❤️ {post.likes_count || 0} curtidas
               </div>
             </div>

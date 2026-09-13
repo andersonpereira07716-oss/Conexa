@@ -85,7 +85,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onBack }) 
         <button
           onClick={onBack}
           style={{
-            backgroundColor: '#1E293B',
+            backgroundColor: 'var(--border)',
             color: '#FFF',
             border: 'none',
             padding: '8px 14px',
@@ -102,13 +102,13 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onBack }) 
       {loading ? (
         <div style={{ textAlign: 'center', color: '#6366F1', padding: '20px' }}>Carregando notificações...</div>
       ) : notifications.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#94A3B8', padding: '40px' }}>Você ainda não tem notificações.</div>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>Você ainda não tem notificações.</div>
       ) : (
         notifications.map((item) => (
           <div
             key={item.id}
             style={{
-              backgroundColor: item.read ? '#131B2E' : '#1E293B',
+              backgroundColor: item.read ? '#131B2E' : 'var(--border)',
               padding: '14px 16px',
               borderRadius: '16px',
               marginBottom: '12px',
@@ -147,7 +147,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({ onBack }) 
               <div style={{ color: '#FFF', fontSize: '14px' }}>
                 <strong>{item.actor?.full_name || 'Usuário'}</strong> {getNotificationText(item.type)}
               </div>
-              <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '4px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                 {new Date(item.created_at).toLocaleDateString('pt-BR', {
                   day: '2-digit',
                   month: '2-digit',

@@ -117,7 +117,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ onBack }) => {
         <button
           onClick={onBack}
           style={{
-            backgroundColor: '#1E293B',
+            backgroundColor: 'var(--border)',
             color: '#FFF',
             border: 'none',
             padding: '8px 14px',
@@ -163,7 +163,7 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ onBack }) => {
 
           <label
             style={{
-              backgroundColor: '#1E293B',
+              backgroundColor: 'var(--border)',
               color: '#818CF8',
               padding: '8px 16px',
               borderRadius: '20px',
@@ -180,15 +180,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ onBack }) => {
         {/* Formulario */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ color: '#94A3B8', fontSize: '13px', display: 'block', marginBottom: '6px' }}>Nome Completo</label>
+            <label style={{ color: 'var(--text-secondary)', fontSize: '13px', display: 'block', marginBottom: '6px' }}>Nome Completo</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               style={{
                 width: '100%',
-                backgroundColor: '#0B0F17',
-                border: '1px solid #1E293B',
+                backgroundColor: 'var(--bg)',
+                border: '1px solid var(--border)',
                 borderRadius: '8px',
                 padding: '10px 14px',
                 color: '#FFF',
@@ -199,15 +199,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <label style={{ color: '#94A3B8', fontSize: '13px', display: 'block', marginBottom: '6px' }}>Nome de Usuário (@username)</label>
+            <label style={{ color: 'var(--text-secondary)', fontSize: '13px', display: 'block', marginBottom: '6px' }}>Nome de Usuário (@username)</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               style={{
                 width: '100%',
-                backgroundColor: '#0B0F17',
-                border: '1px solid #1E293B',
+                backgroundColor: 'var(--bg)',
+                border: '1px solid var(--border)',
                 borderRadius: '8px',
                 padding: '10px 14px',
                 color: '#FFF',
@@ -218,15 +218,15 @@ export const ProfileEditView: React.FC<ProfileEditViewProps> = ({ onBack }) => {
           </div>
 
           <div>
-            <label style={{ color: '#94A3B8', fontSize: '13px', display: 'block', marginBottom: '6px' }}>Bio / Apresentação</label>
+            <label style={{ color: 'var(--text-secondary)', fontSize: '13px', display: 'block', marginBottom: '6px' }}>Bio / Apresentação</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Escreva algo sobre você..."
               style={{
                 width: '100%',
-                backgroundColor: '#0B0F17',
-                border: '1px solid #1E293B',
+                backgroundColor: 'var(--bg)',
+                border: '1px solid var(--border)',
                 borderRadius: '8px',
                 padding: '10px 14px',
                 color: '#FFF',

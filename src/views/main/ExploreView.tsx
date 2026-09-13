@@ -167,7 +167,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
         <button
           onClick={selectedProfile ? () => setSelectedProfile(null) : onBack}
           style={{
-            backgroundColor: '#1E293B',
+            backgroundColor: 'var(--border)',
             color: '#FFF',
             border: 'none',
             padding: '8px 14px',
@@ -195,7 +195,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
               style={{
                 width: '100%',
                 backgroundColor: '#131B2E',
-                border: '1px solid #1E293B',
+                border: '1px solid var(--border)',
                 borderRadius: '20px',
                 padding: '12px 18px',
                 color: '#FFF',
@@ -210,7 +210,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
           {loading ? (
             <div style={{ textAlign: 'center', color: '#6366F1', padding: '20px' }}>Buscando usuários...</div>
           ) : searchResults.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#94A3B8', padding: '40px' }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>
               {searchTerm.trim().length > 1
                 ? 'Nenhum usuário encontrado.'
                 : 'Digite o nome ou @username de alguém para pesquisar.'}
@@ -258,7 +258,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
 
                   <div>
                     <div style={{ color: '#FFF', fontWeight: 'bold', fontSize: '15px' }}>{item.full_name}</div>
-                    <div style={{ color: '#94A3B8', fontSize: '13px' }}>@{item.username}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>@{item.username}</div>
                   </div>
                 </div>
 
@@ -269,8 +269,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
                       handleToggleFollow(item.id, item.is_following);
                     }}
                     style={{
-                      backgroundColor: item.is_following ? '#1E293B' : '#6366F1',
-                      color: item.is_following ? '#94A3B8' : '#FFF',
+                      backgroundColor: item.is_following ? 'var(--border)' : '#6366F1',
+                      color: item.is_following ? 'var(--text-secondary)' : '#FFF',
                       border: 'none',
                       padding: '6px 14px',
                       borderRadius: '16px',
@@ -317,21 +317,21 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
             )}
 
             <h2 style={{ color: '#FFF', fontSize: '20px', margin: '0 0 4px 0' }}>{selectedProfile.full_name}</h2>
-            <div style={{ color: '#94A3B8', fontSize: '14px', marginBottom: '12px' }}>@{selectedProfile.username}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '12px' }}>@{selectedProfile.username}</div>
 
             {selectedProfile.bio && (
-              <div style={{ color: '#CBD5E1', fontSize: '14px', marginBottom: '16px' }}>{selectedProfile.bio}</div>
+              <div style={{ color: 'var(--text-body)', fontSize: '14px', marginBottom: '16px' }}>{selectedProfile.bio}</div>
             )}
 
             {/* Contadores */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', margin: '16px 0' }}>
               <div>
                 <div style={{ color: '#FFF', fontWeight: 'bold', fontSize: '18px' }}>{followersCount}</div>
-                <div style={{ color: '#94A3B8', fontSize: '12px' }}>Seguidores</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Seguidores</div>
               </div>
               <div>
                 <div style={{ color: '#FFF', fontWeight: 'bold', fontSize: '18px' }}>{followingCount}</div>
-                <div style={{ color: '#94A3B8', fontSize: '12px' }}>Seguindo</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Seguindo</div>
               </div>
             </div>
 
@@ -340,8 +340,8 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
               <button
                 onClick={() => handleToggleFollow(selectedProfile.id, selectedProfile.is_following)}
                 style={{
-                  backgroundColor: selectedProfile.is_following ? '#1E293B' : '#6366F1',
-                  color: selectedProfile.is_following ? '#94A3B8' : '#FFF',
+                  backgroundColor: selectedProfile.is_following ? 'var(--border)' : '#6366F1',
+                  color: selectedProfile.is_following ? 'var(--text-secondary)' : '#FFF',
                   border: 'none',
                   padding: '10px 24px',
                   borderRadius: '20px',
@@ -362,21 +362,21 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onBack }) => {
           {loadingProfile ? (
             <div style={{ textAlign: 'center', color: '#6366F1', padding: '20px' }}>Carregando perfil...</div>
           ) : userPosts.length === 0 ? (
-            <div style={{ textAlign: 'center', color: '#94A3B8', padding: '20px' }}>Este usuário ainda não publicou nada.</div>
+            <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Este usuário ainda não publicou nada.</div>
           ) : (
             userPosts.map((post) => (
               <div key={post.id} style={{ backgroundColor: '#131B2E', padding: '16px', borderRadius: '16px', marginBottom: '12px' }}>
                 {post.content && (
-                  <div style={{ color: '#E2E8F0', fontSize: '14px', lineHeight: '1.5', marginBottom: '8px' }}>
+                  <div style={{ color: 'var(--text-body)', fontSize: '14px', lineHeight: '1.5', marginBottom: '8px' }}>
                     {post.content}
                   </div>
                 )}
                 {post.image_url && (
-                  <div style={{ borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0B0F17' }}>
+                  <div style={{ borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--bg)' }}>
                     <img src={post.image_url} alt="Mídia" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }} />
                   </div>
                 )}
-                <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '8px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '8px' }}>
                   {new Date(post.created_at).toLocaleDateString('pt-BR')}
                 </div>
               </div>

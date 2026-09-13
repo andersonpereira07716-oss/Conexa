@@ -21,7 +21,7 @@ export const AppRoutes: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', color: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh', color: '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         Carregando CONEXA...
       </div>
     );
@@ -46,7 +46,7 @@ export const AppRoutes: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', color: '#FFF' }}>
+    <div style={{ backgroundColor: 'var(--bg)', minHeight: '100vh', color: '#FFF' }}>
       <Suspense fallback={<div style={{ padding: '20px', color: '#6366F1' }}>Carregando tela...</div>}>
         {renderContent()}
       </Suspense>

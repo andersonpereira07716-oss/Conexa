@@ -7,8 +7,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0B0F17;
+        --surface: #161F30;
+        --surface-alt: #0F1620;
+        --border: #232C3D;
+        --text: #F8FAFC;
+        --text-secondary: #94A3B8;
+        --text-muted: #64748B;
+        --text-body: #CBD5E1;
+      }
+      html.light {
+        --bg: #F8FAFC;
+        --surface: #FFFFFF;
+        --surface-alt: #F1F5F9;
+        --border: #E2E8F0;
+        --text: #0B0F17;
+        --text-secondary: #475569;
+        --text-muted: #64748B;
+        --text-body: #1E293B;
+      }
+      body { transition: background-color 0.2s ease; }
+    </style>
   </head>
-  <body style="margin: 0; padding: 0; background-color: #0B0F17; font-family: 'Inter', -apple-system, sans-serif;">
+  <body style="margin: 0; padding: 0; background-color: var(--bg); font-family: 'Inter', -apple-system, sans-serif;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

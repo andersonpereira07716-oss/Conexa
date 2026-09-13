@@ -13,7 +13,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, o
   ];
 
   return (
-    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(22,31,48,0.92)', backdropFilter: 'blur(10px)', borderTop: '1px solid #232C3D', display: 'flex', justifyContent: 'center', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', zIndex: 100 }}>
+    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(22,31,48,0.92)', backdropFilter: 'blur(10px)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center', padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', zIndex: 100 }}>
       <div style={{ display: 'flex', gap: '4px', width: '100%', maxWidth: '400px', justifyContent: 'space-around' }}>
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -25,7 +25,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, o
                 background: isActive ? 'rgba(99,102,241,0.15)' : 'none',
                 border: 'none',
                 borderRadius: '14px',
-                color: isActive ? '#818CF8' : '#64748B',
+                color: isActive ? '#818CF8' : 'var(--text-muted)',
                 fontWeight: isActive ? 700 : 500,
                 display: 'flex',
                 flexDirection: 'column',

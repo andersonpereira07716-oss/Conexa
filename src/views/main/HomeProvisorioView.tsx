@@ -248,14 +248,14 @@ export const FeedView: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '20px', paddingBottom: '90px', color: '#F8FAFC', maxWidth: '600px', margin: '0 auto', boxSizing: 'border-box' }}>
+    <div style={{ padding: '20px', paddingBottom: '90px', color: 'var(--text)', maxWidth: '600px', margin: '0 auto', boxSizing: 'border-box' }}>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1 style={{ fontSize: '1.4rem', fontWeight: 'bold', color: '#6366F1', margin: 0, letterSpacing: '1px' }}>CONEXA</h1>
         <span style={{ fontSize: '1.2rem' }}>🔔</span>
       </div>
 
-      <div style={{ backgroundColor: '#161F30', border: '1px solid #1E293B', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
+      <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', marginBottom: '24px' }}>
         <textarea
           placeholder="O que está acontecendo?"
           value={newPost}
@@ -265,7 +265,7 @@ export const FeedView: React.FC = () => {
             width: '100%',
             backgroundColor: 'transparent',
             border: 'none',
-            color: '#F8FAFC',
+            color: 'var(--text)',
             fontSize: '0.95rem',
             resize: 'none',
             outline: 'none',
@@ -294,12 +294,12 @@ export const FeedView: React.FC = () => {
       </div>
 
       {loading ? (
-        <p style={{ textAlign: 'center', color: '#94A3B8' }}>Carregando publicações...</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Carregando publicações...</p>
       ) : posts.length === 0 ? (
-        <p style={{ textAlign: 'center', color: '#94A3B8' }}>Nenhuma publicação ainda. Seja o primeiro!</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>Nenhuma publicação ainda. Seja o primeiro!</p>
       ) : (
         posts.map((post) => (
-          <div key={post.id} style={{ backgroundColor: '#161F30', border: '1px solid #1E293B', borderRadius: '16px', padding: '16px', marginBottom: '16px' }}>
+          <div key={post.id} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', marginBottom: '16px' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -308,7 +308,7 @@ export const FeedView: React.FC = () => {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold' }}>{post.author_name}</h3>
-                  <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>@{post.author_username}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>@{post.author_username}</span>
                 </div>
               </div>
 
@@ -323,14 +323,14 @@ export const FeedView: React.FC = () => {
               )}
             </div>
 
-            <p style={{ fontSize: '0.9rem', color: '#E2E8F0', margin: '0 0 14px 0', lineHeight: '1.4' }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-body)', margin: '0 0 14px 0', lineHeight: '1.4' }}>
               {post.content}
             </p>
 
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', color: '#94A3B8', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
               <button
                 onClick={() => handleToggleLike(post)}
-                style={{ backgroundColor: 'transparent', border: 'none', color: post.is_liked ? '#EF4444' : '#94A3B8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: 0 }}
+                style={{ backgroundColor: 'transparent', border: 'none', color: post.is_liked ? '#EF4444' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: 0 }}
               >
                 <span>{post.is_liked ? '❤️' : '🤍'}</span>
                 <span>{post.likes_count}</span>
@@ -338,7 +338,7 @@ export const FeedView: React.FC = () => {
 
               <button
                 onClick={() => handleToggleComments(post.id)}
-                style={{ backgroundColor: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: 0 }}
+                style={{ backgroundColor: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: 0 }}
               >
                 <span>💬</span>
                 <span>{post.comments_count && post.comments_count > 0 ? post.comments_count : 'Comentar'}</span>
@@ -346,17 +346,17 @@ export const FeedView: React.FC = () => {
             </div>
 
             {activePostForComments === post.id && (
-              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #1E293B' }}>
+              <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
                   {(commentsMap[post.id] || []).length === 0 ? (
-                    <p style={{ fontSize: '0.8rem', color: '#64748B', fontStyle: 'italic', margin: 0 }}>Nenhum comentário ainda.</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', margin: 0 }}>Nenhum comentário ainda.</p>
                   ) : (
                     commentsMap[post.id].map((comment) => (
-                      <div key={comment.id} style={{ backgroundColor: '#0B0F17', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div key={comment.id} style={{ backgroundColor: 'var(--bg)', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#818CF8', display: 'block' }}>{comment.author_name}</span>
-                          <p style={{ fontSize: '0.85rem', color: '#CBD5E1', margin: '2px 0 0 0' }}>{comment.content}</p>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', margin: '2px 0 0 0' }}>{comment.content}</p>
                         </div>
 
                         {currentUser && currentUser.id === comment.user_id && (
@@ -381,7 +381,7 @@ export const FeedView: React.FC = () => {
                     onChange={(e) => setNewCommentText(e.target.value)}
                     style={{
                       flex: 1,
-                      backgroundColor: '#0B0F17',
+                      backgroundColor: 'var(--bg)',
                       border: '1px solid #334155',
                       borderRadius: '20px',
                       padding: '8px 14px',

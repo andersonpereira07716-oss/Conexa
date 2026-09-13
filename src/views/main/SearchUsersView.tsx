@@ -49,7 +49,7 @@ export const SearchUsersView: React.FC<Props> = ({ onSelectUser }) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Nome ou @usuário"
-          style={{ flex: 1, backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '14px', padding: '12px 16px', color: '#FFF', fontSize: '0.9rem', outline: 'none' }}
+          style={{ flex: 1, backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 16px', color: '#FFF', fontSize: '0.9rem', outline: 'none' }}
         />
         <button type="submit" disabled={!query.trim()} style={{ background: query.trim() ? '#6366F1' : '#334155', border: 'none', color: '#FFF', borderRadius: '14px', padding: '0 20px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>
           Buscar
@@ -57,9 +57,9 @@ export const SearchUsersView: React.FC<Props> = ({ onSelectUser }) => {
       </form>
 
       {loading ? (
-        <p style={{ textAlign: 'center', color: '#64748B' }}>Buscando...</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Buscando...</p>
       ) : searched && results.length === 0 ? (
-        <p style={{ textAlign: 'center', color: '#64748B' }}>Nenhum usuário encontrado.</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Nenhum usuário encontrado.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {results.map((p) => {
@@ -70,14 +70,14 @@ export const SearchUsersView: React.FC<Props> = ({ onSelectUser }) => {
               <div
                 key={p.id}
                 onClick={() => onSelectUser(p.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '14px', padding: '12px 14px', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 14px', cursor: 'pointer' }}
               >
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: avatarColor(handle), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: '#0B0F17', flexShrink: 0 }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: avatarColor(handle), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: 'var(--bg)', flexShrink: 0 }}>
                   {initial}
                 </div>
                 <div>
                   <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>{displayName}</p>
-                  <span style={{ fontSize: '0.78rem', color: '#64748B' }}>{handle}</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{handle}</span>
                 </div>
               </div>
             );

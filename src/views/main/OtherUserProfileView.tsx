@@ -77,47 +77,47 @@ export const OtherUserProfileView: React.FC<Props> = ({ userId, onBack, onOpenFo
   const avatarUrl = profile?.avatar_url;
 
   if (loading) {
-    return <div style={{ padding: '20px', color: '#64748B', textAlign: 'center' }}>Carregando perfil...</div>;
+    return <div style={{ padding: '20px', color: 'var(--text-muted)', textAlign: 'center' }}>Carregando perfil...</div>;
   }
 
   return (
-    <div style={{ padding: '20px', color: '#F8FAFC', paddingBottom: '80px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '0.85rem', cursor: 'pointer', padding: 0, marginBottom: '16px' }}>← Voltar</button>
+    <div style={{ padding: '20px', color: 'var(--text)', paddingBottom: '80px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', padding: 0, marginBottom: '16px' }}>← Voltar</button>
 
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         {avatarUrl ? (
           <img src={avatarUrl} alt="avatar" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto 12px auto', display: 'block' }} />
         ) : (
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: avatarColor(handle), margin: '0 auto 12px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#0B0F17' }}>{initial}</div>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: avatarColor(handle), margin: '0 auto 12px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: 'var(--bg)' }}>{initial}</div>
         )}
         <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem' }}>{displayName}</h3>
-        <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.85rem' }}>{handle}</p>
-        {bio && <p style={{ margin: '10px auto 0 auto', color: '#CBD5E1', fontSize: '0.85rem', maxWidth: '320px' }}>{bio}</p>}
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{handle}</p>
+        {bio && <p style={{ margin: '10px auto 0 auto', color: 'var(--text-body)', fontSize: '0.85rem', maxWidth: '320px' }}>{bio}</p>}
 
         {!isOwnProfile && (
           <button
             onClick={() => (isFollowing ? handleUnfollow() : handleFollow())}
-            style={{ marginTop: '14px', background: isFollowing ? 'transparent' : '#6366F1', border: isFollowing ? '1px solid #232C3D' : 'none', color: isFollowing ? '#94A3B8' : '#FFF', borderRadius: '18px', padding: '8px 22px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
+            style={{ marginTop: '14px', background: isFollowing ? 'transparent' : '#6366F1', border: isFollowing ? '1px solid var(--border)' : 'none', color: isFollowing ? 'var(--text-secondary)' : '#FFF', borderRadius: '18px', padding: '8px 22px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}
           >
             {isFollowing ? 'Seguindo' : 'Seguir'}
           </button>
         )}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: '#161F30', border: '1px solid #232C3D', padding: '16px', borderRadius: '14px', marginBottom: '24px', textAlign: 'center' }}>
-        <div><strong style={{ display: 'block', fontSize: '1.1rem' }}>{posts.length}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Publicações</span></div>
-        <div onClick={() => onOpenFollowList && onOpenFollowList(userId, 'followers')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followersCount}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguidores</span></div>
-        <div onClick={() => onOpenFollowList && onOpenFollowList(userId, 'following')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followingCount}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguindo</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', padding: '16px', borderRadius: '14px', marginBottom: '24px', textAlign: 'center' }}>
+        <div><strong style={{ display: 'block', fontSize: '1.1rem' }}>{posts.length}</strong><span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Publicações</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList(userId, 'followers')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followersCount}</strong><span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Seguidores</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList(userId, 'following')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followingCount}</strong><span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Seguindo</span></div>
       </div>
 
       {posts.length === 0 ? (
-        <p style={{ textAlign: 'center', color: '#64748B' }}>Nenhuma publicação ainda.</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Nenhuma publicação ainda.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {posts.map((post) => (
-            <div key={post.id} style={{ backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '14px', padding: '14px' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: '#E2E8F0', whiteSpace: 'pre-wrap' }}>{post.content}</p>
-              <span style={{ fontSize: '0.78rem', color: '#94A3B8' }}>❤️ {post.likes_count || 0}</span>
+            <div key={post.id} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '14px' }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '0.88rem', color: 'var(--text-body)', whiteSpace: 'pre-wrap' }}>{post.content}</p>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>❤️ {post.likes_count || 0}</span>
             </div>
           ))}
         </div>

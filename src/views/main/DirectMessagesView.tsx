@@ -159,7 +159,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
         <button
           onClick={onBack}
           style={{
-            backgroundColor: '#1E293B',
+            backgroundColor: 'var(--border)',
             color: '#FFF',
             border: 'none',
             padding: '8px 14px',
@@ -177,16 +177,16 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
         <div
           style={{
             width: activeContact ? '35%' : '100%',
-            borderRight: activeContact ? '1px solid #1E293B' : 'none',
+            borderRight: activeContact ? '1px solid var(--border)' : 'none',
             overflowY: 'auto',
             padding: '12px',
           }}
         >
-          <h3 style={{ color: '#94A3B8', fontSize: '14px', marginBottom: '12px' }}>CONVERSAS</h3>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '12px' }}>CONVERSAS</h3>
           {loadingContacts ? (
             <div style={{ color: '#6366F1', fontSize: '13px' }}>Carregando contatos...</div>
           ) : conversations.length === 0 ? (
-            <div style={{ color: '#94A3B8', fontSize: '13px' }}>Siga outros usuários para conversar com eles.</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Siga outros usuários para conversar com eles.</div>
           ) : (
             conversations.map((contact) => (
               <div
@@ -198,7 +198,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
                   gap: '10px',
                   padding: '10px',
                   borderRadius: '12px',
-                  backgroundColor: activeContact?.id === contact.id ? '#1E293B' : 'transparent',
+                  backgroundColor: activeContact?.id === contact.id ? 'var(--border)' : 'transparent',
                   cursor: 'pointer',
                   marginBottom: '6px',
                 }}
@@ -231,7 +231,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
                   <div style={{ color: '#FFF', fontWeight: 'bold', fontSize: '14px', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>
                     {contact.full_name}
                   </div>
-                  <div style={{ color: '#94A3B8', fontSize: '12px' }}>@{contact.username}</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>@{contact.username}</div>
                 </div>
               </div>
             ))
@@ -240,14 +240,14 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
 
         {activeContact && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1E293B', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ fontWeight: 'bold', color: '#FFF' }}>{activeContact.full_name}</div>
-                <div style={{ color: '#94A3B8', fontSize: '12px' }}>@{activeContact.username}</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>@{activeContact.username}</div>
               </div>
               <button
                 onClick={() => setActiveContact(null)}
-                style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
               >
                 ✕
               </button>
@@ -257,7 +257,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
               {loadingMessages ? (
                 <div style={{ color: '#6366F1', textAlign: 'center' }}>Carregando conversa...</div>
               ) : messages.length === 0 ? (
-                <div style={{ color: '#94A3B8', textAlign: 'center', marginTop: '20px' }}>Nenhuma mensagem ainda. Diga olá! 👋</div>
+                <div style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '20px' }}>Nenhuma mensagem ainda. Diga olá! 👋</div>
               ) : (
                 messages.map((msg) => {
                   const isMine = msg.sender_id === user?.id;
@@ -266,7 +266,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
                       key={msg.id}
                       style={{
                         alignSelf: isMine ? 'flex-end' : 'flex-start',
-                        backgroundColor: isMine ? '#6366F1' : '#1E293B',
+                        backgroundColor: isMine ? '#6366F1' : 'var(--border)',
                         color: '#FFF',
                         padding: '10px 14px',
                         borderRadius: isMine ? '16px 16px 0px 16px' : '16px 16px 16px 0px',
@@ -283,7 +283,7 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
               <div ref={messagesEndRef} />
             </div>
 
-            <div style={{ padding: '12px', borderTop: '1px solid #1E293B', display: 'flex', gap: '8px' }}>
+            <div style={{ padding: '12px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
               <input
                 type="text"
                 placeholder="Escreva uma mensagem..."
@@ -292,8 +292,8 @@ export const DirectMessagesView: React.FC<DirectMessagesViewProps> = ({ onBack }
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 style={{
                   flex: 1,
-                  backgroundColor: '#0B0F17',
-                  border: '1px solid #1E293B',
+                  backgroundColor: 'var(--bg)',
+                  border: '1px solid var(--border)',
                   borderRadius: '20px',
                   padding: '8px 14px',
                   color: '#FFF',

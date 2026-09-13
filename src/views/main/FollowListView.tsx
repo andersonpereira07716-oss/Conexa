@@ -48,14 +48,14 @@ export const FollowListView: React.FC<Props> = ({ userId, mode, onBack, onSelect
   const title = mode === 'followers' ? 'Seguidores' : 'Seguindo';
 
   return (
-    <div style={{ padding: '20px', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto', color: '#F8FAFC' }}>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '0.85rem', cursor: 'pointer', padding: 0, marginBottom: '16px' }}>← Voltar</button>
+    <div style={{ padding: '20px', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto', color: 'var(--text)' }}>
+      <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', padding: 0, marginBottom: '16px' }}>← Voltar</button>
       <h2 style={{ margin: '0 0 16px 0', fontSize: '1.3rem', fontWeight: 700 }}>{title}</h2>
 
       {loading ? (
-        <p style={{ textAlign: 'center', color: '#64748B' }}>Carregando...</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Carregando...</p>
       ) : people.length === 0 ? (
-        <p style={{ textAlign: 'center', color: '#64748B' }}>{mode === 'followers' ? 'Ninguém segue essa conta ainda.' : 'Ainda não segue ninguém.'}</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>{mode === 'followers' ? 'Ninguém segue essa conta ainda.' : 'Ainda não segue ninguém.'}</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {people.map((p) => {
@@ -66,18 +66,18 @@ export const FollowListView: React.FC<Props> = ({ userId, mode, onBack, onSelect
               <div
                 key={p.id}
                 onClick={() => onSelectUser(p.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '14px', padding: '12px 14px', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '12px 14px', cursor: 'pointer' }}
               >
                 {p.avatar_url ? (
                   <img src={p.avatar_url} alt="avatar" style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                 ) : (
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: avatarColor(handle), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: '#0B0F17', flexShrink: 0 }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: avatarColor(handle), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: 'var(--bg)', flexShrink: 0 }}>
                     {initial}
                   </div>
                 )}
                 <div>
                   <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>{displayName}</p>
-                  <span style={{ fontSize: '0.78rem', color: '#64748B' }}>{handle}</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{handle}</span>
                 </div>
               </div>
             );

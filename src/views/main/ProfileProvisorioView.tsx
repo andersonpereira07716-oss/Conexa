@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../services/supabase';
+import { useTheme } from '../../context/ThemeContext';
 
 const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #6366F1, #818CF8)',
@@ -22,6 +23,7 @@ interface Props {
 
 export const ProfileProvisorioView: React.FC<Props> = ({ onOpenFollowList }) => {
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [postsCount, setPostsCount] = useState<number | null>(null);
   const [followersCount, setFollowersCount] = useState<number | null>(null);
   const [followingCount, setFollowingCount] = useState<number | null>(null);
@@ -96,26 +98,26 @@ export const ProfileProvisorioView: React.FC<Props> = ({ onOpenFollowList }) => 
 
   if (editing) {
     return (
-      <div style={{ padding: '20px', color: '#F8FAFC', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
+      <div style={{ padding: '20px', color: 'var(--text)', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
         <h2 style={{ margin: '0 0 20px 0', fontSize: '1.3rem', fontWeight: 700 }}>Editar perfil</h2>
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <label style={{ cursor: 'pointer', display: 'inline-block', position: 'relative' }}>
             {avatarPreview || avatarUrl ? (
               <img src={avatarPreview || avatarUrl} alt="avatar" style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: avatarColor(handle), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#0B0F17' }}>{initial}</div>
+              <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: avatarColor(handle), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: 'var(--bg)' }}>{initial}</div>
             )}
-            <div style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#6366F1', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', border: '2px solid #0B0F17' }}>📷</div>
+            <div style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#6366F1', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', border: '2px solid var(--bg)' }}>📷</div>
             <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
           </label>
-          <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '8px' }}>Toque para trocar a foto</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>Toque para trocar a foto</p>
         </div>
-        <label style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>Nome</label>
-        <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: '100%', backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '12px', padding: '12px 14px', color: '#FFF', fontSize: '0.9rem', boxSizing: 'border-box', marginBottom: '16px' }} />
-        <label style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>Bio</label>
-        <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} rows={3} maxLength={160} placeholder="Fale um pouco sobre você..." style={{ width: '100%', backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '12px', padding: '12px 14px', color: '#FFF', fontSize: '0.9rem', boxSizing: 'border-box', resize: 'none', fontFamily: 'inherit', marginBottom: '20px' }} />
+        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>Nome</label>
+        <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: '100%', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 14px', color: '#FFF', fontSize: '0.9rem', boxSizing: 'border-box', marginBottom: '16px' }} />
+        <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>Bio</label>
+        <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} rows={3} maxLength={160} placeholder="Fale um pouco sobre você..." style={{ width: '100%', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 14px', color: '#FFF', fontSize: '0.9rem', boxSizing: 'border-box', resize: 'none', fontFamily: 'inherit', marginBottom: '20px' }} />
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => setEditing(false)} disabled={saving} style={{ flex: 1, background: 'none', border: '1px solid #232C3D', color: '#94A3B8', borderRadius: '12px', padding: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={() => setEditing(false)} disabled={saving} style={{ flex: 1, background: 'none', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: '12px', padding: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={handleSaveProfile} disabled={saving} style={{ flex: 1, background: saving ? '#334155' : '#6366F1', border: 'none', color: '#FFF', borderRadius: '12px', padding: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
         </div>
       </div>
@@ -123,28 +125,32 @@ export const ProfileProvisorioView: React.FC<Props> = ({ onOpenFollowList }) => 
   }
 
   return (
-    <div style={{ padding: '20px', color: '#F8FAFC', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', color: 'var(--text)', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
         {avatarUrl ? (
           <img src={avatarUrl} alt="avatar" style={{ width: '84px', height: '84px', borderRadius: '50%', objectFit: 'cover', margin: '0 auto 12px auto', display: 'block', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }} />
         ) : (
-          <div style={{ width: '84px', height: '84px', borderRadius: '50%', background: avatarColor(handle), margin: '0 auto 12px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: '#0B0F17', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>{initial}</div>
+          <div style={{ width: '84px', height: '84px', borderRadius: '50%', background: avatarColor(handle), margin: '0 auto 12px auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 700, color: 'var(--bg)', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>{initial}</div>
         )}
         <h3 style={{ margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: 700 }}>{fullName}</h3>
-        <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.85rem' }}>{handle}</p>
-        {bio && <p style={{ margin: '10px auto 0 auto', color: '#CBD5E1', fontSize: '0.85rem', maxWidth: '320px' }}>{bio}</p>}
-        <button onClick={startEditing} style={{ marginTop: '14px', background: 'none', border: '1px solid #232C3D', color: '#94A3B8', borderRadius: '18px', padding: '7px 18px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Editar perfil</button>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{handle}</p>
+        {bio && <p style={{ margin: '10px auto 0 auto', color: 'var(--text-body)', fontSize: '0.85rem', maxWidth: '320px' }}>{bio}</p>}
+        <button onClick={startEditing} style={{ marginTop: '14px', background: 'none', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: '18px', padding: '7px 18px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>Editar perfil</button>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: '#161F30', border: '1px solid #232C3D', padding: '18px', borderRadius: '16px', marginBottom: '24px', textAlign: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
-        <div><strong style={{ display: 'block', fontSize: '1.15rem' }}>{postsCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Publicações</span></div>
-        <div onClick={() => onOpenFollowList && onOpenFollowList('followers')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followersCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguidores</span></div>
-        <div onClick={() => onOpenFollowList && onOpenFollowList('following')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followingCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguindo</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: 'var(--surface)', border: '1px solid var(--border)', padding: '18px', borderRadius: '16px', marginBottom: '24px', textAlign: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
+        <div><strong style={{ display: 'block', fontSize: '1.15rem' }}>{postsCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Publicações</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList('followers')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followersCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Seguidores</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList('following')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followingCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Seguindo</span></div>
       </div>
 
-      <div style={{ backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
-        <div style={{ padding: '15px 16px', borderBottom: '1px solid #232C3D', fontSize: '0.9rem', cursor: 'pointer' }}>⚙️ Configurações da Conta</div>
-        <div style={{ padding: '15px 16px', borderBottom: '1px solid #232C3D', fontSize: '0.9rem', cursor: 'pointer' }}>🔒 Privacidade e Segurança</div>
+      <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
+        <div style={{ padding: '15px 16px', borderBottom: '1px solid var(--border)', fontSize: '0.9rem', cursor: 'pointer' }}>⚙️ Configurações da Conta</div>
+        <div style={{ padding: '15px 16px', borderBottom: '1px solid var(--border)', fontSize: '0.9rem', cursor: 'pointer' }}>🔒 Privacidade e Segurança</div>
+        <div onClick={toggleTheme} style={{ padding: '15px 16px', borderBottom: '1px solid var(--border)', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{theme === 'dark' ? '🌙' : '☀️'} Tema {theme === 'dark' ? 'Escuro' : 'Claro'}</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Toque para trocar</span>
+        </div>
         <div onClick={signOut} style={{ padding: '15px 16px', color: '#EF4444', fontSize: '0.9rem', cursor: 'pointer', fontWeight: 600 }}>🚪 Sair da Conta</div>
       </div>
     </div>
