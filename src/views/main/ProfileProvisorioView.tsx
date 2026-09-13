@@ -16,7 +16,11 @@ function avatarColor(seed: string) {
   return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
 }
 
-export const ProfileProvisorioView: React.FC = () => {
+interface Props {
+  onOpenFollowList?: (mode: 'followers' | 'following') => void;
+}
+
+export const ProfileProvisorioView: React.FC<Props> = ({ onOpenFollowList }) => {
   const { user, signOut } = useAuth();
   const [postsCount, setPostsCount] = useState<number | null>(null);
   const [followersCount, setFollowersCount] = useState<number | null>(null);
@@ -66,29 +70,17 @@ export const ProfileProvisorioView: React.FC = () => {
     setSaving(true);
     try {
       let avatarUrl = profile?.avatar_url || null;
-
       if (avatarFile) {
         const ext = avatarFile.name.split('.').pop();
         const path = `${user.id}/avatar.${ext}`;
         const { error: uploadError } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true });
-        if (uploadError) {
-          alert('Erro ao enviar foto: ' + uploadError.message);
-          setSaving(false);
-          return;
-        }
+        if (uploadError) { alert('Erro ao enviar foto: ' + uploadError.message); setSaving(false); return; }
         const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(path);
         avatarUrl = publicUrlData.publicUrl + '?t=' + Date.now();
       }
-
       const { error: profileError } = await supabase.from('profiles').update({ full_name: editName.trim(), bio: editBio.trim(), avatar_url: avatarUrl }).eq('id', user.id);
-      if (profileError) {
-        alert('Erro ao salvar perfil: ' + profileError.message);
-        setSaving(false);
-        return;
-      }
-
+      if (profileError) { alert('Erro ao salvar perfil: ' + profileError.message); setSaving(false); return; }
       await supabase.auth.updateUser({ data: { full_name: editName.trim() } });
-
       setProfile((prev: any) => ({ ...prev, full_name: editName.trim(), bio: editBio.trim(), avatar_url: avatarUrl }));
       setEditing(false);
     } finally {
@@ -106,7 +98,6 @@ export const ProfileProvisorioView: React.FC = () => {
     return (
       <div style={{ padding: '20px', color: '#F8FAFC', paddingBottom: '90px', boxSizing: 'border-box', maxWidth: '560px', margin: '0 auto' }}>
         <h2 style={{ margin: '0 0 20px 0', fontSize: '1.3rem', fontWeight: 700 }}>Editar perfil</h2>
-
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <label style={{ cursor: 'pointer', display: 'inline-block', position: 'relative' }}>
             {avatarPreview || avatarUrl ? (
@@ -119,13 +110,10 @@ export const ProfileProvisorioView: React.FC = () => {
           </label>
           <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '8px' }}>Toque para trocar a foto</p>
         </div>
-
         <label style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>Nome</label>
         <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ width: '100%', backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '12px', padding: '12px 14px', color: '#FFF', fontSize: '0.9rem', boxSizing: 'border-box', marginBottom: '16px' }} />
-
         <label style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>Bio</label>
         <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} rows={3} maxLength={160} placeholder="Fale um pouco sobre você..." style={{ width: '100%', backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '12px', padding: '12px 14px', color: '#FFF', fontSize: '0.9rem', boxSizing: 'border-box', resize: 'none', fontFamily: 'inherit', marginBottom: '20px' }} />
-
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => setEditing(false)} disabled={saving} style={{ flex: 1, background: 'none', border: '1px solid #232C3D', color: '#94A3B8', borderRadius: '12px', padding: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
           <button onClick={handleSaveProfile} disabled={saving} style={{ flex: 1, background: saving ? '#334155' : '#6366F1', border: 'none', color: '#FFF', borderRadius: '12px', padding: '12px', fontSize: '0.85rem', fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}>{saving ? 'Salvando...' : 'Salvar'}</button>
@@ -150,8 +138,8 @@ export const ProfileProvisorioView: React.FC = () => {
 
       <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: '#161F30', border: '1px solid #232C3D', padding: '18px', borderRadius: '16px', marginBottom: '24px', textAlign: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>
         <div><strong style={{ display: 'block', fontSize: '1.15rem' }}>{postsCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Publicações</span></div>
-        <div><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followersCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguidores</span></div>
-        <div><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followingCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguindo</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList('followers')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followersCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguidores</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList('following')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.15rem' }}>{followingCount ?? '...'}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguindo</span></div>
       </div>
 
       <div style={{ backgroundColor: '#161F30', border: '1px solid #232C3D', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}>

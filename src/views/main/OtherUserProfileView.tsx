@@ -19,9 +19,10 @@ function avatarColor(seed: string) {
 interface Props {
   userId: string;
   onBack: () => void;
+  onOpenFollowList?: (userId: string, mode: 'followers' | 'following') => void;
 }
 
-export const OtherUserProfileView: React.FC<Props> = ({ userId, onBack }) => {
+export const OtherUserProfileView: React.FC<Props> = ({ userId, onBack, onOpenFollowList }) => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
@@ -35,16 +36,12 @@ export const OtherUserProfileView: React.FC<Props> = ({ userId, onBack }) => {
       setLoading(true);
       const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
       setProfile(profileData);
-
       const { data: postsData } = await supabase.from('posts').select('*').eq('user_id', userId).order('created_at', { ascending: false });
       setPosts(postsData || []);
-
       const { count: followers } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('followed_id', userId);
       setFollowersCount(followers ?? 0);
-
       const { count: following } = await supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId);
       setFollowingCount(following ?? 0);
-
       if (user) {
         const { data: followRow } = await supabase.from('follows').select('id').eq('follower_id', user.id).eq('followed_id', userId).maybeSingle();
         setIsFollowing(!!followRow);
@@ -109,8 +106,8 @@ export const OtherUserProfileView: React.FC<Props> = ({ userId, onBack }) => {
 
       <div style={{ display: 'flex', justifyContent: 'space-around', backgroundColor: '#161F30', border: '1px solid #232C3D', padding: '16px', borderRadius: '14px', marginBottom: '24px', textAlign: 'center' }}>
         <div><strong style={{ display: 'block', fontSize: '1.1rem' }}>{posts.length}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Publicações</span></div>
-        <div><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followersCount}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguidores</span></div>
-        <div><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followingCount}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguindo</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList(userId, 'followers')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followersCount}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguidores</span></div>
+        <div onClick={() => onOpenFollowList && onOpenFollowList(userId, 'following')} style={{ cursor: onOpenFollowList ? 'pointer' : 'default' }}><strong style={{ display: 'block', fontSize: '1.1rem' }}>{followingCount}</strong><span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Seguindo</span></div>
       </div>
 
       {posts.length === 0 ? (

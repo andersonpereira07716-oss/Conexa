@@ -3,6 +3,7 @@ import BottomNavigation from '../../components/layout/BottomNavigation';
 import ProfileProvisorioView from './ProfileProvisorioView';
 import { OtherUserProfileView } from './OtherUserProfileView';
 import { SearchUsersView } from './SearchUsersView';
+import { FollowListView } from './FollowListView';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -43,6 +44,7 @@ export const HomeProvisoriaView: React.FC = () => {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [followListState, setFollowListState] = useState<{ userId: string; mode: 'followers' | 'following' } | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [myAvatarUrl, setMyAvatarUrl] = useState<string | null>(null);
@@ -178,6 +180,18 @@ export const HomeProvisoriaView: React.FC = () => {
     }
   };
 
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    const backup = comments[postId] || [];
+    setComments((prev) => ({ ...prev, [postId]: (prev[postId] || []).filter((c) => c.id !== commentId) }));
+    setCommentCounts((prev) => ({ ...prev, [postId]: Math.max(0, (prev[postId] || 1) - 1) }));
+    const { error } = await supabase.from('comments').delete().eq('id', commentId);
+    if (error) {
+      alert('Erro ao apagar comentário: ' + error.message);
+      setComments((prev) => ({ ...prev, [postId]: backup }));
+      setCommentCounts((prev) => ({ ...prev, [postId]: backup.length }));
+    }
+  };
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleToggleNotifications = async () => {
@@ -196,10 +210,28 @@ export const HomeProvisoriaView: React.FC = () => {
     return '';
   };
 
+  if (followListState) {
+    return (
+      <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', color: '#F8FAFC' }}>
+        <FollowListView
+          userId={followListState.userId}
+          mode={followListState.mode}
+          onBack={() => setFollowListState(null)}
+          onSelectUser={(id) => { setFollowListState(null); setViewingUserId(id); }}
+        />
+        <BottomNavigation activeTab={activeTab} onTabChange={(tab) => { setFollowListState(null); setActiveTab(tab); }} />
+      </div>
+    );
+  }
+
   if (viewingUserId) {
     return (
       <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', color: '#F8FAFC' }}>
-        <OtherUserProfileView userId={viewingUserId} onBack={() => setViewingUserId(null)} />
+        <OtherUserProfileView
+          userId={viewingUserId}
+          onBack={() => setViewingUserId(null)}
+          onOpenFollowList={(uid, mode) => setFollowListState({ userId: uid, mode })}
+        />
         <BottomNavigation activeTab={activeTab} onTabChange={(tab) => { setViewingUserId(null); setActiveTab(tab); }} />
       </div>
     );
@@ -217,7 +249,7 @@ export const HomeProvisoriaView: React.FC = () => {
   if (activeTab === 'profile') {
     return (
       <div style={{ backgroundColor: '#0B0F17', minHeight: '100vh', color: '#F8FAFC' }}>
-        <ProfileProvisorioView />
+        <ProfileProvisorioView onOpenFollowList={(mode) => user && setFollowListState({ userId: user.id, mode })} />
         <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
     );
@@ -321,14 +353,19 @@ export const HomeProvisoriaView: React.FC = () => {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
                           {(comments[post.id] || []).map((c: any) => (
-                            <div key={c.id} style={{ display: 'flex', gap: '8px' }}>
+                            <div key={c.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                               <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: avatarColor(c.author_handle || c.id), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700, color: '#0B0F17' }}>
                                 {(c.author_name || 'U').substring(0, 2).toUpperCase()}
                               </div>
                               <div style={{ backgroundColor: '#0F1620', borderRadius: '12px', padding: '8px 12px', flex: 1 }}>
-                                <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline', marginBottom: '2px' }}>
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{c.author_name}</span>
-                                  <span style={{ fontSize: '0.7rem', color: '#64748B' }}>{c.author_handle}</span>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline', marginBottom: '2px', justifyContent: 'space-between' }}>
+                                  <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{c.author_name}</span>
+                                    <span style={{ fontSize: '0.7rem', color: '#64748B' }}>{c.author_handle}</span>
+                                  </div>
+                                  {c.user_id === user?.id && (
+                                    <button onClick={() => handleDeleteComment(post.id, c.id)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '0.75rem', padding: 0 }}>🗑️</button>
+                                  )}
                                 </div>
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: '#CBD5E1' }}>{c.content}</p>
                               </div>
